@@ -4,13 +4,13 @@ const AAPI = 'https://api.alquran.cloud/v1';
 const FAWAZ_CDN = 'https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions';
 const TCDN = 'https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir';
 
-const EDITIONS = { en: 'en.sahih', uz: 'uz.sodik', ru: 'ru.kuliev' };
-const FAWAZ_EDITIONS = { ky: 'kir-shamsaldinhakim', kk: 'kaz-khalifahaltai' };
+const EDITIONS = { en: 'en.sahih', ru: 'ru.kuliev' };
+const FAWAZ_EDITIONS = { ky: 'kir-shamsaldinhakim' };
 
 // Map our lang codes to WBW languages supported by Quran.com
 // Quran.com supports WBW in: en, ur, bn, id, tr, hi, ta, fr, de, ru, zh, ml
 // For unsupported langs, fallback to en
-const WBW_LANG_MAP = { en: 'en', ru: 'ru', uz: 'uz', ky: 'en', kk: 'en' };
+const WBW_LANG_MAP = { en: 'en', ru: 'ru', ky: 'en' };
 
 // Names & meanings (populated from data/surah-names.json)
 let SURAH_NAMES = {};
@@ -19,10 +19,8 @@ let SURAH_TR = {};
 // Language list shared with render.js
 const LANGS = [
   { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'ky', name: 'Кыргызча', flag: '🇰🇬' },
-  { code: 'kk', name: 'Қазақша', flag: '🇰🇿' },
-  { code: 'uz', name: "O'zbekcha", flag: '🇺🇿' },
-  { code: 'ru', name: 'Русский', flag: '🇷🇺' }
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'ky', name: 'Кыргызча', flag: '🇰🇬' }
 ];
 
 // Tafsir source registry
@@ -33,27 +31,14 @@ const TAFSIR_SOURCES = {
     { id: 'en-tazkirul-quran', type: 'remote', remoteId: 'en-tazkirul-quran', name: 'Tazkirul Quran' }
   ],
   ky: [
-    { id: 'kyrgyz-mokhtasar', type: 'local', file: 'data/tafsir/kyrgyz-mokhtasar.json', name: 'Кыска тафсир (Кыргызча)' }
+    { id: 'kyrgyz-mokhtasar', type: 'local', file: 'tafsir/kyrgyz-mokhtasar.json', name: 'Кыска тафсир (Кыргызча)' }
   ],
   ru: [
-    { id: 'russian-mokhtasar', type: 'local', file: 'data/tafsir/russian-mokhtasar.json', name: 'Мухтасар (рус.)' },
-    { id: 'ru-tafsir-ibne-kahtir', type: 'local', file: 'data/tafsir/ru-tafsir-ibne-kahtir.json', name: 'Ибн Касир (рус.)' }
-  ],
-  uz: [
-    { id: 'uzbek-mokhtasar', type: 'local', file: 'data/tafsir/uzbek-mokhtasar.json', name: 'Mokhtasar (O‘zbekcha)' }
-  ],
-  kk: [] // fallback to English below
+    { id: 'russian-mokhtasar', type: 'local', file: 'tafsir/russian-mokhtasar.json', name: 'Мухтасар (рус.)' }
+  ]
 };
 
 function getTafsirSourcesForLang(lang) {
-  if (lang === 'kk') {
-    // Kazakh: fall back to English sources, but label as English
-    return (TAFSIR_SOURCES.en || []).map(src => ({
-      ...src,
-      id: src.id,
-      name: `${src.name} (English)`
-    }));
-  }
   const own = TAFSIR_SOURCES[lang];
   if (own && own.length) return own;
   return TAFSIR_SOURCES.en || [];
@@ -98,7 +83,7 @@ async function fetchWBW(chNum, langCode) {
     let all = [];
     let pg = 1;
     while (true) {
-      const url = `${QAPI}/verses/by_chapter/${chNum}?language=${wbwLang}&word_translation_language=${wbwLang}&words=true&word_fields=text_uthmani,translation,transliteration&per_page=50&page=${pg}&translations=131&fields=text_uthmani`;
+      const url = `${QAPI}/verses/by_chapter/${chNum}?language=${wbwLang}&word_translation_language=${wbwLang}&words=true&word_fields=text_uthmani,translation,transliteration&per_page=50&page=${pg}&translations=131&fields=text_uthmani&audio=7`;
       const r = await fetch(url);
       const d = await r.json();
       all = [...all, ...(d.verses || [])];
@@ -179,20 +164,25 @@ async function ensureLocalTafsirLoaded(sourceId) {
 
 function extractQULTafsirText(json, surah, ayah) {
   if (!json) return null;
-  const directKey = `${surah}:${ayah}`;
-  const val = json[directKey];
-  if (!val) return null;
+  let key = `${surah}:${ayah}`;
+  const visited = new Set();
 
-  if (typeof val === 'string') {
-    const group = json[val];
-    if (group && typeof group === 'object' && group.text) {
-      return group.text;
+  while (key && !visited.has(key)) {
+    visited.add(key);
+    const val = json[key];
+    if (!val) return null;
+
+    if (typeof val === 'string') {
+      // pointer to another key like "2:3"
+      key = val;
+      continue;
     }
-    return null;
-  }
 
-  if (typeof val === 'object' && val.text) {
-    return val.text;
+    if (typeof val === 'object' && val.text) {
+      return val.text;
+    }
+
+    return null;
   }
 
   return null;

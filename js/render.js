@@ -44,7 +44,7 @@ function renderHome() {
         { className: 'ctr' },
         h('div', { className: 'bismillah' }, 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ'),
         h('div', { className: 'title' }, 'Quran Central Asia'),
-        h('div', { className: 'sub' }, "Кыргызча • Қазақша • O'zbekcha • English • Русский"),
+        h('div', { className: 'sub' }, "Кыргызча • English • Русский"),
         h(
           'div',
           { style: { display: 'flex', justifyContent: 'center', marginTop: '10px' } },
@@ -142,6 +142,7 @@ function renderSurah() {
           className: 'back-btn',
           onClick: () => {
             stopAudio();
+            stopTafsirSpeech();
             setState({ view: 'home' });
           }
         },
@@ -338,10 +339,13 @@ function renderSurah() {
               h(
                 'div',
                 { className: 'wbw-row' },
-                ...v.words.map((w, wi) => {
-                  const isW = w.char_type_name === 'word';
-                  const isHL = isP && wi === s.hlWord;
-                  return h(
+                (() => {
+                  let wordIdx = -1;
+                  return v.words.map((w, wi) => {
+                    const isW = w.char_type_name === 'word';
+                    if (isW) wordIdx += 1;
+                    const isHL = isP && isW && wordIdx === s.hlWord;
+                    return h(
                     'button',
                     {
                       className: `wbw-word ${isHL ? 'hl' : ''}`,
@@ -365,7 +369,8 @@ function renderSurah() {
                     isW ? h('div', { className: 'w-tr' }, w.transliteration?.text || '') : null,
                     isW ? h('div', { className: 'w-en' }, w.translation?.text || '') : null
                   );
-                })
+                  });
+                })()
               )
             );
           } else {
@@ -387,20 +392,25 @@ function renderSurah() {
 
           let tafEl = null;
           if (showT) {
-            const tafList = getTafsirSourcesForLang(s.lang);
-            const activeTaf = tafList.find(t => t.id === s.tafSrc)?.id || tafList[0]?.id;
-            if (activeTaf && activeTaf !== s.tafSrc) {
-              state.tafSrc = activeTaf;
-              loadTaf(ch.number, an);
-            }
-            const tKey2 = `${activeTaf}:${ch.number}:${an}`;
-            tafEl = h(
+          const tafList = getTafsirSourcesForLang(s.lang);
+          const activeTaf = tafList.find(t => t.id === s.tafSrc)?.id || tafList[0]?.id;
+          if (activeTaf && activeTaf !== s.tafSrc) {
+            state.tafSrc = activeTaf;
+            loadTaf(ch.number, an);
+          }
+          const tKey2 = `${activeTaf}:${ch.number}:${an}`;
+          const isSpeaking = s.speaking && s.speakingTafsirKey === tKey2;
+
+          tafEl = h(
+            'div',
+            { className: 'taf-box' },
+            h(
               'div',
-              { className: 'taf-box' },
+              { className: 'taf-hdr' },
+              h('span', { className: 'taf-label' }, '📖 Tafsir'),
               h(
                 'div',
-                { className: 'taf-hdr' },
-                h('span', { className: 'taf-label' }, '📖 Tafsir'),
+                { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
                 (() => {
                   const tSel = h(
                     'select',
@@ -415,13 +425,50 @@ function renderSurah() {
                   );
                   if (activeTaf) tSel.value = activeTaf;
                   return tSel;
-                })()
-              ),
-              h('div', {
-                className: 'taf-content',
-                innerHTML: s.tafData[tKey2] || 'Loading tafsir...'
-              })
-            );
+                })(),
+                (() => {
+                  const rateSel = h(
+                    'select',
+                    {
+                      className: 'taf-rate',
+                      title: 'Tafsir speech speed',
+                      onChange: e => {
+                        const val = parseFloat(e.target.value);
+                        setState({ speechRate: isNaN(val) ? 1.0 : val });
+                      }
+                    },
+                    h('option', { value: '0.8' }, '0.8x'),
+                    h('option', { value: '1.0' }, '1.0x'),
+                    h('option', { value: '1.2' }, '1.2x')
+                  );
+                  rateSel.value = String(s.speechRate || 1.0);
+                  return rateSel;
+                })(),
+                h(
+                  'button',
+                  {
+                    className: 'v-btn',
+                    title: isSpeaking ? 'Stop tafsir audio' : 'Play tafsir audio',
+                    onClick: () => {
+                      const html = s.tafData[tKey2];
+                      if (!html) return;
+                      if (isSpeaking) {
+                        stopTafsirSpeech();
+                        render();
+                      } else {
+                        playTafsirSpeech(ch.number, an, activeTaf, html);
+                      }
+                    }
+                  },
+                  isSpeaking ? '⏹' : '🔊'
+                )
+              )
+            ),
+            h('div', {
+              className: 'taf-content',
+              innerHTML: s.tafData[tKey2] || 'Loading tafsir...'
+            })
+          );
           }
 
           return h('div', { className: 'verse' }, ctrl, arabicEl, transEl, tafEl);

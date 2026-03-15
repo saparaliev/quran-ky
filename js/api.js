@@ -47,6 +47,22 @@ function getTafsirSourcesForLang(lang) {
 // Cache for local QUL tafsir JSON
 const localTafsirCache = {}; // key: source.id -> json object
 
+// Kyrgyz word-by-word meanings: { "surah": { "ayah": ["meaning1", ...] } }
+let wbwKyCache = null;
+
+async function loadWbwKy() {
+  if (wbwKyCache) return wbwKyCache;
+  try {
+    const r = await fetch('data/wbw-ky.json');
+    if (!r.ok) return null;
+    wbwKyCache = await r.json();
+    return wbwKyCache;
+  } catch (e) {
+    console.error('Failed to load wbw-ky.json', e);
+    return null;
+  }
+}
+
 async function loadSurahNames() {
   try {
     const res = await fetch('data/surah-names.json');
@@ -90,7 +106,12 @@ async function fetchWBW(chNum, langCode) {
       if (!d.pagination || pg >= d.pagination.total_pages) break;
       pg++;
     }
-    setState({ verses: all, vLoading: false, wbw: true });
+    let patch = { verses: all, vLoading: false, wbw: true };
+    if (langCode === 'ky') {
+      const wbwKyData = await loadWbwKy();
+      if (wbwKyData) patch.wbwKyData = wbwKyData;
+    }
+    setState(patch);
   } catch (e) {
     console.error('WBW failed, falling back to uthmani only', e);
     try {

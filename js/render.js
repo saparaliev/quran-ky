@@ -313,9 +313,10 @@ function renderSurah() {
           let arabicEl;
           const wbwIsEnglish =
             s.lang !== 'en' && v.words?.[0]?.translation?.language_name === 'english';
+          const showWbwFallbackNote = wbwIsEnglish && s.lang !== 'ky';
 
           if (s.wbw && v.words && v.words.length > 0) {
-            const wbwNote = wbwIsEnglish
+            const wbwNote = showWbwFallbackNote
               ? h(
                   'div',
                   {
@@ -341,10 +342,16 @@ function renderSurah() {
                 { className: 'wbw-row' },
                 (() => {
                   let wordIdx = -1;
+                  const surahKey = String(ch.number);
+                  const ayahKey = String(an);
+                  const kyMeanings = s.wbwKyData && s.lang === 'ky' ? s.wbwKyData[surahKey]?.[ayahKey] : null;
                   return v.words.map((w, wi) => {
                     const isW = w.char_type_name === 'word';
                     if (isW) wordIdx += 1;
                     const isHL = isP && isW && wordIdx === s.hlWord;
+                    const meaning = (isW && s.lang === 'ky' && kyMeanings && kyMeanings[wordIdx] != null)
+                      ? kyMeanings[wordIdx]
+                      : (w.translation?.text || '');
                     return h(
                     'button',
                     {
@@ -356,7 +363,7 @@ function renderSurah() {
                             selWord: {
                               ar: w.text_uthmani || w.text,
                               tr: w.transliteration?.text,
-                              en: w.translation?.text,
+                              en: meaning,
                               surah: ch.number,
                               ayah: an,
                               idx: wi + 1
@@ -367,7 +374,7 @@ function renderSurah() {
                     },
                     h('div', { className: 'w-ar' }, w.text_uthmani || w.text),
                     isW ? h('div', { className: 'w-tr' }, w.transliteration?.text || '') : null,
-                    isW ? h('div', { className: 'w-en' }, w.translation?.text || '') : null
+                    isW ? h('div', { className: 'w-en' }, meaning) : null
                   );
                   });
                 })()

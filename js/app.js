@@ -41,6 +41,7 @@ let state = {
   tafOpen: null,
   tafData: {},
   tafSrc: null,
+  wbwKyData: null,
   speakingTafsirKey: null,
   speaking: false,
   speechRate: 1.0,

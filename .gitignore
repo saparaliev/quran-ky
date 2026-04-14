@@ -1,0 +1,21 @@
+# API Keys & secrets
+.env
+*.env
+.env.local
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+quran-tts/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db

@@ -50,6 +50,23 @@ const localTafsirCache = {}; // key: source.id -> json object
 // Kyrgyz word-by-word meanings: { "surah": { "ayah": ["meaning1", ...] } }
 let wbwKyCache = null;
 
+// English transliteration HTML: { "surah:ayah": "<b>...</b>" }
+let translitEnCache = null;
+
+async function loadTransliterationEn() {
+  if (translitEnCache) return translitEnCache;
+  try {
+    // Stored as english-transliteration-rtf-updated.json in the data folder
+    const r = await fetch('data/english-transliteration-rtf-updated.json');
+    if (!r.ok) return null;
+    translitEnCache = await r.json();
+    return translitEnCache;
+  } catch (e) {
+    console.error('Failed to load english-transliteration-rtf-updated.json', e);
+    return null;
+  }
+}
+
 async function loadWbwKy() {
   if (wbwKyCache) return wbwKyCache;
   try {

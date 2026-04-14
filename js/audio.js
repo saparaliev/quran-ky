@@ -6,6 +6,24 @@ let audio = null;
 let hlTimer = null;
 let hlPollTimer = null;
 let timeupdateScheduled = false;
+let wakeLockSentinel = null;
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) {}
+}
+
+async function releaseWakeLock() {
+  try {
+    if (wakeLockSentinel) {
+      await wakeLockSentinel.release();
+      wakeLockSentinel = null;
+    }
+  } catch (e) {}
+}
 
 /**
  * Build word timings from API segments. Segments are [index, position, start_ms, end_ms].
@@ -36,12 +54,32 @@ function getWordTimingsFallback(verse, durationMs) {
   });
 }
 
+function pauseKyAuxAudio() {
+  if (typeof window.pauseAllKyPrerecorded === 'function') {
+    window.pauseAllKyPrerecorded();
+  }
+  ['kyAuxAudioTrans', 'kyAuxAudioTafsir'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.pause();
+      el.currentTime = 0;
+      try {
+        el.removeAttribute('src');
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  });
+}
+
 function playAyah(sn, an) {
+  pauseKyAuxAudio();
   stopAudio();
   timeupdateScheduled = false;
   const url = `${AUDIO_BASE}/${pad3(sn)}${pad3(an)}.mp3`;
   audio = new Audio(url);
   setState({ playing: `${sn}:${an}`, hlWord: 0 });
+  requestWakeLock();
 
   const v = state.verses.find(x => x.verse_number === an);
   const wordTimings = getWordTimings(v);
@@ -92,7 +130,8 @@ function playAyah(sn, an) {
   audio.onerror = () => stopAudio();
 }
 
-function stopAudio() {
+/** Pause Everyayah recitation without setState — use before Kyrgyz aux play() so the click stays a valid user gesture. */
+function pauseArabicRecitationOnly() {
   if (audio) {
     audio.pause();
     audio = null;
@@ -102,6 +141,11 @@ function stopAudio() {
   hlTimer = null;
   hlPollTimer = null;
   timeupdateScheduled = false;
+}
+
+function stopAudio() {
+  pauseArabicRecitationOnly();
+  releaseWakeLock();
   setState({ playing: null, hlWord: -1 });
 }
 

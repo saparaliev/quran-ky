@@ -16,9 +16,73 @@ function h(tag, attrs, ...children) {
   return el;
 }
 
+/**
+ * Typeform: publish a form at typeform.com, then copy the ID from the share URL:
+ * https://form.typeform.com/to/XXXXXXXX — use only the XXXXXXXX part here.
+ * Replies appear in the Typeform dashboard under Results.
+ */
+const TYPEFORM_FEEDBACK_ID = '';
+
+function closeMenu() {
+  if (state.menuOpen) setState({ menuOpen: false });
+}
+
+function navigate(view) {
+  stopAudio();
+  stopTafsirSpeech();
+  if (typeof pauseKyAuxAudio === 'function') pauseKyAuxAudio();
+  setState({ view, menuOpen: false });
+}
+
+function renderMenuOverlay() {
+  const s = state;
+  if (!s.menuOpen) return null;
+  return h(
+    'div',
+    { className: 'menu-ovl', onClick: () => closeMenu() },
+    h(
+      'div',
+      { className: 'menu-drawer', onClick: e => e.stopPropagation() },
+      h('div', { className: 'menu-title' }, 'Menu'),
+      h(
+        'button',
+        { className: `menu-item ${s.view === 'home' ? 'on' : ''}`, onClick: () => navigate('home') },
+        'Home'
+      ),
+      h(
+        'button',
+        { className: `menu-item ${s.view === 'feedback' ? 'on' : ''}`, onClick: () => navigate('feedback') },
+        'Feedback'
+      ),
+      h(
+        'button',
+        { className: `menu-item ${s.view === 'contribute' ? 'on' : ''}`, onClick: () => navigate('contribute') },
+        'Contribute'
+      ),
+      h(
+        'button',
+        { className: `menu-item ${s.view === 'about' ? 'on' : ''}`, onClick: () => navigate('about') },
+        'About'
+      )
+    )
+  );
+}
+
+function renderTopLeftMenuButton() {
+  return h(
+    'button',
+    {
+      className: 'menu-btn',
+      title: 'Menu',
+      onClick: () => setState({ menuOpen: !state.menuOpen })
+    },
+    '☰'
+  );
+}
+
 function renderHome() {
   const s = state;
-  const q = s.q.toLowerCase();
+  const q = (s.q || '').toLowerCase();
   const filtered = s.chapters.filter(c => {
     if (!q) return true;
     const nm = (SURAH_NAMES[s.lang]?.[c.number - 1] || '').toLowerCase();
@@ -42,6 +106,7 @@ function renderHome() {
       h(
         'div',
         { className: 'ctr' },
+        h('div', { className: 'topbar' }, renderTopLeftMenuButton(), h('div', { className: 'topbar-spacer' })),
         h('div', { className: 'bismillah' }, 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ'),
         h('div', { className: 'title' }, 'Quran Central Asia'),
         h('div', { className: 'sub' }, "Кыргызча • English • Русский"),
@@ -79,7 +144,21 @@ function renderHome() {
             className: 'search',
             placeholder: 'Search surahs...',
             value: s.q,
-            onInput: e => setState({ q: e.target.value })
+            onInput: e => {
+              const val = e.target.value;
+              // Update query immediately; also show instant chapter-name matches for 3+ chars
+              // so UI doesn't appear empty while debounced search runs.
+              const trimmed = String(val || '').trim();
+              const isNum = /^\d{1,3}$/.test(trimmed) ? parseInt(trimmed, 10) : null;
+              const doFull = trimmed.length >= 3 || (isNum && isNum >= 1 && isNum <= 114);
+              if (doFull) {
+                const chapterGroups = buildChapterGroups(trimmed);
+                setState({ q: val, searchResults: chapterGroups, searchCount: 0 });
+              } else {
+                setState({ q: val, searchResults: null, searchCount: 0 });
+              }
+              scheduleFullSearch(val);
+            }
           })
         )
       )
@@ -89,7 +168,12 @@ function renderHome() {
       { className: 'ctr', style: { padding: '16px' } },
       s.loading
         ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), 'Loading surahs...')
-        : filtered.map(ch =>
+        : (() => {
+            const rawQ = (s.q || '').trim();
+            const isNum = /^\d{1,3}$/.test(rawQ) ? parseInt(rawQ, 10) : null;
+            const doFull = rawQ.length >= 3 || (isNum && isNum >= 1 && isNum <= 114);
+            if (!doFull) {
+              return filtered.map(ch =>
             h(
               'button',
               { className: 'ch-btn', onClick: () => loadSurah(ch) },
@@ -119,7 +203,236 @@ function renderHome() {
                 )
               )
             )
-          )
+              );
+            }
+
+            const groups = s.searchResults || [];
+            const hasAnyResults = groups.length > 0;
+            const UI =
+              s.lang === 'en'
+                ? {
+                    labelSearching: 'Search (offline + cache)',
+                    btnAll: 'Search all surahs',
+                    loading: 'Loading...',
+                    none: 'No results found',
+                    found: n => `${n} results found`
+                  }
+                : s.lang === 'ky'
+                  ? {
+                      labelSearching: 'Издөө (offline + cache)',
+                      btnAll: 'Search all surahs',
+                      loading: 'Жүктөлүүдө...',
+                      none: 'Эч нерсе табылган жок',
+                      found: n => `${n} нетижесе табылды`
+                    }
+                  : {
+                      labelSearching: 'Поиск (offline + cache)',
+                      btnAll: 'Search all surahs',
+                      loading: 'Загрузка...',
+                      none: 'Ничего не найдено',
+                      found: n => `${n} результатов найдено`
+                    };
+            const topRow = h(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '10px',
+                  marginBottom: '10px'
+                }
+              },
+              h(
+                'div',
+                { style: { fontSize: '12px', color: '#94a3b8' } },
+                s.searchAllLoaded ? UI.found(s.searchCount) : UI.labelSearching
+              ),
+              h(
+                'button',
+                {
+                  className: 'pill pill-off',
+                  style: { padding: '6px 10px' },
+                  disabled: s.searchAllLoading,
+                  onClick: () => searchAllSurahsNow()
+                },
+                s.searchAllLoading ? UI.loading : UI.btnAll
+              )
+            );
+
+            const loadingEl = s.searchAllLoading
+              ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), UI.loading)
+              : null;
+
+            const emptyEl = !s.searchAllLoading && !hasAnyResults
+              ? h('div', { style: { color: '#94a3b8', fontSize: '13px', padding: '10px 0' } }, UI.none)
+              : null;
+
+            const resultsEl = h(
+              'div',
+              { style: { display: 'flex', flexDirection: 'column', gap: '12px' } },
+              ...groups
+                .map(g => {
+                  const head = h(
+                    'div',
+                    { style: { fontSize: '13px', color: '#e2e8f0', fontWeight: '600' } },
+                    `${g.surah}. ${g.label}`
+                  );
+
+                  // If this group is only a chapter-name/number match, allow navigation
+                  if (!(g.hits || []).length) {
+                    return h(
+                      'button',
+                      {
+                        className: 'ch-btn',
+                        onClick: () => {
+                          const ch = s.chapters.find(c => c.number === g.surah);
+                          if (ch) loadSurah(ch);
+                        }
+                      },
+                      h('div', { className: 'ch-num' }, String(g.surah)),
+                      h('div', { style: { flex: '1', minWidth: '0' } }, head)
+                    );
+                  }
+
+                  const ar = searchCacheAr.get(g.surah) || null;
+                  const hitBtns = (g.hits || []).slice(0, 50).map(hit => {
+                    const arTxt = ar ? (ar[hit.ayah - 1] || '') : '';
+                    return h(
+                      'button',
+                      {
+                        className: 'ch-btn',
+                        onClick: () => openSurahAt(g.surah, hit.ayah),
+                        style: { textAlign: 'left' }
+                      },
+                      h('div', { className: 'ch-num' }, `${hit.ayah}`),
+                      h(
+                        'div',
+                        { style: { flex: '1', minWidth: '0' } },
+                        h(
+                          'div',
+                          { style: { fontSize: '12px', color: '#94a3b8', marginBottom: '4px' } },
+                          `${g.surah}:${hit.ayah}`
+                        ),
+                        h(
+                          'div',
+                          { style: { fontSize: '18px', direction: 'rtl', textAlign: 'right', color: '#e2e8f0', fontFamily: 'serif', marginBottom: '6px' } },
+                          arTxt || '...'
+                        ),
+                        h('div', {
+                          style: { fontSize: '13px', color: '#c4b5fd', lineHeight: '1.6' },
+                          innerHTML: highlightHtml(hit.ky, rawQ)
+                        })
+                      )
+                    );
+                  });
+
+                  return h('div', {}, head, h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' } }, ...hitBtns));
+                })
+            );
+
+            return h('div', {}, topRow, loadingEl, emptyEl, resultsEl);
+          })()
+    )
+  , renderMenuOverlay());
+}
+
+function renderPageShell(title, bodyEl) {
+  return h(
+    'div',
+    {},
+    h(
+      'div',
+      { className: 'hdr' },
+      h(
+        'div',
+        { className: 'ctr' },
+        h('div', { className: 'topbar' }, renderTopLeftMenuButton(), h('div', { className: 'page-title' }, title)),
+      )
+    ),
+    h('div', { className: 'ctr', style: { padding: '16px' } }, bodyEl),
+    renderMenuOverlay()
+  );
+}
+
+function renderFeedback() {
+  const intro = h(
+    'div',
+    { className: 'page-card', style: { marginBottom: '14px' } },
+    h(
+      'div',
+      { className: 'page-p' },
+      'Share bugs, ideas, or questions. Your answers are collected in our Typeform (secure form provider).'
+    )
+  );
+
+  const id = String(TYPEFORM_FEEDBACK_ID || '').trim();
+  if (!id) {
+    const note = h(
+      'div',
+      { className: 'page-card typeform-setup-note' },
+      h('div', { className: 'page-h' }, 'Connect your Typeform'),
+      h(
+        'div',
+        { className: 'page-p' },
+        'In js/render.js, set TYPEFORM_FEEDBACK_ID to the ID from your published form’s share link (the part after /to/). Then reload this page.'
+      )
+    );
+    return renderPageShell('Feedback', h('div', {}, intro, note));
+  }
+
+  const src = `https://form.typeform.com/to/${encodeURIComponent(id)}`;
+  const frame = h('iframe', {
+    className: 'typeform-frame',
+    src,
+    title: 'Feedback',
+    loading: 'lazy',
+    allow: 'microphone; camera; geolocation; autoplay; encrypted-media; fullscreen'
+  });
+  frame.setAttribute('allowfullscreen', '');
+
+  const wrap = h('div', { className: 'typeform-wrap' }, frame);
+  return renderPageShell('Feedback', h('div', {}, intro, wrap));
+}
+
+function renderContribute() {
+  return renderPageShell(
+    'Contribute',
+    h(
+      'div',
+      { className: 'page-card' },
+      h('div', { className: 'page-h' }, 'Contribute'),
+      h(
+        'div',
+        { className: 'page-p' },
+        'We’ll add PayPal / bank transfer details here soon.'
+      )
+    )
+  );
+}
+
+function renderAbout() {
+  return renderPageShell(
+    'About',
+    h(
+      'div',
+      { className: 'page-card' },
+      h('div', { className: 'page-h' }, 'About Quran Central Asia'),
+      h(
+        'div',
+        { className: 'page-p' },
+        'We are a small group of Quran enthusiasts building a simple, fast Quran reading experience for Central Asian audiences.'
+      ),
+      h(
+        'div',
+        { className: 'page-p', style: { marginTop: '10px' } },
+        'Our focus is mindful reading: Arabic text, translations, tafsir, and helpful study tools — with an interface that works well on mobile.'
+      ),
+      h(
+        'div',
+        { className: 'page-p', style: { marginTop: '10px', color: '#94a3b8' } },
+        'Feedback is welcome — use the Feedback page from the menu.'
+      )
     )
   );
 }
@@ -136,6 +449,7 @@ function renderSurah() {
     h(
       'div',
       { className: 's-bar ctr' },
+      renderTopLeftMenuButton(),
       h(
         'button',
         {
@@ -179,6 +493,20 @@ function renderSurah() {
       h(
         'button',
         {
+          className: `pill ${s.showTranslit ? 'pill-on' : 'pill-off'}`,
+          title:
+            s.lang === 'en' ? 'Transliteration (Latin)' : 'Transliteration (Cyrillic)',
+          onClick: () => {
+            const next = !s.showTranslit;
+            localStorage.setItem('qca_show_translit', next ? '1' : '0');
+            setState({ showTranslit: next });
+          }
+        },
+        'ABC'
+      ),
+      h(
+        'button',
+        {
           className: `pill ${s.continuous ? 'pill-on' : 'pill-off'}`,
           onClick: () => setState({ continuous: !s.continuous }),
           title: 'Continuous play'
@@ -215,13 +543,16 @@ function renderSurah() {
                     onClick: () => {
                       const sources = getTafsirSourcesForLang(l.code);
                       const nextTaf = sources[0]?.id || null;
+                      if (typeof pauseKyAuxAudio === 'function') pauseKyAuxAudio();
+                      stopTafsirSpeech();
                       setState({
                         lang: l.code,
                         showLang: false,
                         vLoading: true,
                         tafSrc: nextTaf,
                         tafOpen: null,
-                        tafData: {}
+                        tafData: {},
+                        playingKyTafsirKey: null
                       });
                       loadTrans(ch.number, l.code);
                       fetchWBW(ch.number, l.code);
@@ -384,18 +715,73 @@ function renderSurah() {
             arabicEl = h('p', { className: 'arabic-line' }, v.text_uthmani || '');
           }
 
-          const transEl = h(
+          let translitEl = null;
+          if (s.showTranslit) {
+            // English: show Latin transliteration (HTML formatted)
+            if (s.lang === 'en' && s.translitEn) {
+              const key = `${ch.number}:${an}`;
+              const html = s.translitEn[key];
+              if (html) {
+                translitEl = h('p', {
+                  className: 'translit-line',
+                  innerHTML: html
+                });
+              }
+            } else {
+              // Russian / Kyrgyz: show Cyrillic transliteration from kazakh_translit.json (dataset label KZ)
+              try {
+                const td = window.translitData;
+                const t = td && td[String(ch.number)] && td[String(ch.number)][String(an)];
+                const txt = t && t.translit ? String(t.translit).trim() : '';
+                if (txt) {
+                  translitEl = h(
+                    'p',
+                    { className: 'kz-translit-line' },
+                    h('span', { className: 'kz-translit-text' }, txt)
+                  );
+                }
+              } catch (e) {}
+            }
+          }
+
+          const transPlain =
+            s.transText[i] ||
+            (v.translations?.[0]?.text || '')
+              .replace(/<[^>]*>/g, '')
+              .replace(/\s+/g, ' ')
+              .trim();
+          const transP = h(
             'p',
             {
               className: 'trans',
               style: s.lang !== 'en' ? { fontSize: '14px', color: '#c4b5fd', fontWeight: '500' } : {}
             },
-            s.transText[i] ||
-              (v.translations?.[0]?.text || '')
-                .replace(/<[^>]*>/g, '')
-                .replace(/\s+/g, ' ')
-                .trim()
+            transPlain
           );
+          const kyTransUrl = `audio/ky/${ch.number}/${an}.mp3`;
+          const transEl =
+            s.lang === 'ky'
+              ? h(
+                  'div',
+                  { className: 'trans-row' },
+                  transP,
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'ky-static-audio-btn',
+                      style: { display: 'none' },
+                      title: 'Play Kyrgyz translation audio',
+                      'data-ky-static-audio': kyTransUrl,
+                      onClick: e => {
+                        e.preventDefault();
+                        playKyStaticAudio('trans', kyTransUrl);
+                      }
+                    },
+                    '🔊'
+                  )
+                )
+              : transP;
 
           let tafEl = null;
           if (showT) {
@@ -407,6 +793,72 @@ function renderSurah() {
           }
           const tKey2 = `${activeTaf}:${ch.number}:${an}`;
           const isSpeaking = s.speaking && s.speakingTafsirKey === tKey2;
+          const isKyMokhtasar = s.lang === 'ky' && activeTaf === 'kyrgyz-mokhtasar';
+          const kyTafUrl = `audio/tafsir/${ch.number}/${an}.mp3`;
+
+          const tSel = h(
+            'select',
+            {
+              className: 'taf-sel',
+              onChange: e => {
+                setState({ tafSrc: e.target.value });
+                loadTaf(ch.number, an);
+              }
+            },
+            ...tafList.map(t => h('option', { value: t.id }, t.name))
+          );
+          if (activeTaf) tSel.value = activeTaf;
+
+          const rateSel = h(
+            'select',
+            {
+              className: 'taf-rate',
+              title: 'Tafsir speech speed',
+              onChange: e => {
+                const val = parseFloat(e.target.value);
+                setState({ speechRate: isNaN(val) ? 1.0 : val });
+              }
+            },
+            h('option', { value: '0.8' }, '0.8x'),
+            h('option', { value: '1.0' }, '1.0x'),
+            h('option', { value: '1.2' }, '1.2x')
+          );
+          rateSel.value = String(s.speechRate || 1.0);
+
+          const ttsBtn = h(
+            'button',
+            {
+              className: 'v-btn',
+              title: isSpeaking ? 'Stop tafsir audio' : 'Play tafsir audio (browser)',
+              onClick: () => {
+                const html = s.tafData[tKey2];
+                if (!html) return;
+                if (isSpeaking) {
+                  stopTafsirSpeech();
+                  render();
+                } else {
+                  playTafsirSpeech(ch.number, an, activeTaf, html);
+                }
+              }
+            },
+            isSpeaking ? '⏹' : '🔊'
+          );
+
+          const kyTafsirElBtn = h(
+            'button',
+            {
+              type: 'button',
+              className: 'v-btn ky-static-audio-btn',
+              style: { display: 'none' },
+              title: 'Play Kyrgyz tafsir audio',
+              'data-ky-static-audio': kyTafUrl,
+              onClick: e => {
+                e.preventDefault();
+                toggleKyTafsirPrerecorded(kyTafUrl, vk);
+              }
+            },
+            s.playingKyTafsirKey === vk ? '⏹' : '🔊'
+          );
 
           tafEl = h(
             'div',
@@ -418,57 +870,8 @@ function renderSurah() {
               h(
                 'div',
                 { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
-                (() => {
-                  const tSel = h(
-                    'select',
-                    {
-                      className: 'taf-sel',
-                      onChange: e => {
-                        setState({ tafSrc: e.target.value });
-                        loadTaf(ch.number, an);
-                      }
-                    },
-                    ...tafList.map(t => h('option', { value: t.id }, t.name))
-                  );
-                  if (activeTaf) tSel.value = activeTaf;
-                  return tSel;
-                })(),
-                (() => {
-                  const rateSel = h(
-                    'select',
-                    {
-                      className: 'taf-rate',
-                      title: 'Tafsir speech speed',
-                      onChange: e => {
-                        const val = parseFloat(e.target.value);
-                        setState({ speechRate: isNaN(val) ? 1.0 : val });
-                      }
-                    },
-                    h('option', { value: '0.8' }, '0.8x'),
-                    h('option', { value: '1.0' }, '1.0x'),
-                    h('option', { value: '1.2' }, '1.2x')
-                  );
-                  rateSel.value = String(s.speechRate || 1.0);
-                  return rateSel;
-                })(),
-                h(
-                  'button',
-                  {
-                    className: 'v-btn',
-                    title: isSpeaking ? 'Stop tafsir audio' : 'Play tafsir audio',
-                    onClick: () => {
-                      const html = s.tafData[tKey2];
-                      if (!html) return;
-                      if (isSpeaking) {
-                        stopTafsirSpeech();
-                        render();
-                      } else {
-                        playTafsirSpeech(ch.number, an, activeTaf, html);
-                      }
-                    }
-                  },
-                  isSpeaking ? '⏹' : '🔊'
-                )
+                tSel,
+                ...(isKyMokhtasar ? [kyTafsirElBtn] : [rateSel, ttsBtn])
               )
             ),
             h('div', {
@@ -478,7 +881,7 @@ function renderSurah() {
           );
           }
 
-          return h('div', { className: 'verse' }, ctrl, arabicEl, transEl, tafEl);
+          return h('div', { className: 'verse', id: `v-${an}` }, ctrl, arabicEl, translitEl, transEl, tafEl);
         })
       );
 
@@ -583,7 +986,12 @@ function renderSurah() {
             'button',
             {
               className: 'abar-pause',
-              onClick: () => stopAudio()
+              onClick: () => stopAudio(),
+              onTouchstart: e => {
+                // Ensure tap works on mobile even if click is delayed
+                e.preventDefault();
+                stopAudio();
+              }
             },
             '⏸'
           ),
@@ -608,6 +1016,6 @@ function renderSurah() {
     versesEl
   );
 
-  return h('div', {}, hdr, bism, cont, wpEl, abEl);
+  return h('div', {}, hdr, bism, cont, wpEl, abEl, renderMenuOverlay());
 }
 

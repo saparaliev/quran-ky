@@ -1,3 +1,241 @@
+function readSurahListFilter() {
+  const v = localStorage.getItem('qb_filter');
+  if (v === 'all' || v === 'meccan' || v === 'medinan' || v === 'juz') return v;
+  return 'all';
+}
+
+/** Stored app language (UI + Quran translation). Persists as `qb_lang`. */
+function readStoredLang() {
+  const raw = localStorage.getItem('qb_lang');
+  return raw === 'en' || raw === 'ru' || raw === 'ky' ? raw : 'ky';
+}
+
+const i18n = {
+  ky: {
+    tagline: 'Куранды окуу жана үйрөнүү',
+    btnSearch: 'Издөө',
+    btnBookmark: 'Белги',
+    searchPlaceholder: 'Сүрө издөө...',
+    tafsir: 'Тафсир',
+    menuTitle: 'Меню',
+    menuTooltip: 'Меню',
+    langSelectAria: 'Тил (меню жана котормо)',
+    navHome: 'Башкы',
+    navBookmarks: 'Белгилер',
+    navFeedback: 'Пикир',
+    navContribute: 'Салым',
+    navAbout: 'Тууралуу',
+    loadingSurahs: 'Сүрөлөр жүктөлүүдө...',
+    loading: 'Жүктөлүүдө...',
+    loadingTafsir: 'Тафсир жүктөлүүдө...',
+    searchLabelSearching: 'Издөө (оффлайн + кэш)',
+    searchBtnAll: 'Бардык сүрөлөрдөн издөө',
+    searchLoading: 'Жүктөлүүдө...',
+    searchNone: 'Эч нерсе табылган жок',
+    searchFound: '{n} нетижө табылды',
+    metaAyahs: 'аят',
+    bookmarksEmpty: 'Белги жок',
+    pageFeedback: 'Пикир',
+    pageContribute: 'Салым',
+    pageAbout: 'Тууралуу',
+    feedbackIntro: 'Көйгөйлөр, идеялар же суроолорду жазыңыз. Жооптор Typeform аркылуу коопсуз чогултулат.',
+    feedbackConnectTitle: 'Typeform туташтырыңыз',
+    feedbackConnectBody:
+      'js/render.js файлында TYPEFORM_FEEDBACK_ID көрсөтүңүз (же бөлүшүү шилтемесиндеги /to/ ID). Андан кийин бул бетти жаңыртыңыз.',
+    contributeTitle: 'Салым',
+    contributeBody: 'Жакында PayPal / банк которууларынын реквизиттерин кошобуз.',
+    aboutTitle: 'Quran Bulak тууралуу',
+    aboutBody1:
+      'Биз Чыгыш Азия аудиториясы үчүн жөнөкөй жана тез Куран окуу тажрыйбасын түзүүгө аракет кылган аз эле адамбыз.',
+    aboutBody2:
+      'Биздин максат — Араб тексти, котормолор, тафсир жана мобилдикке ыңгайлуу интерфейс аркылуу насыйаттуу окуу.',
+    aboutBody3: 'Пикирлер кошумча — менюдан «Пикир» баракчасын колдонуңуз.',
+    wMean: 'Маани',
+    wPos: 'Орун',
+    wpPosFmt: 'Сөз {word} • {ayah}-аят',
+    autoPlay: 'Авто ⏩',
+    errGeneric: 'Жүктөө катасы. Интернетти текшериңиз же кайра аракет кылыңыз.',
+    titleDoc: 'Quran Bulak',
+    ttWbw: 'Сөзмө-сөз көрүнүшү',
+    ttTranslit: 'Транслитерация',
+    btnWbw: 'Сөзмө-сөз',
+    btnPhonetic: 'Транслит',
+    ttContinuous: 'Улантуу менен окуу',
+    ttTafsirRate: 'Тафсир үнү ылдамдыгы',
+    ttStopTafsirTts: 'Тафсирди токтотуу',
+    ttPlayTafsirTts: 'Тафсирди окуу (браузер)',
+    ttPlayKyTafsir: 'Кыргызча тафсир аудиосу',
+    ttPlayKyTrans: 'Кыргызча котормуу аудиосу',
+    wbwNote: 'Сөз маанилери англисче көрсөтүлүүдө (WBW {lang} үчүн жеткиликтүү эмес)'
+  },
+  en: {
+    tagline: 'Quran Reading and Learning',
+    btnSearch: 'Search',
+    btnBookmark: 'Bookmark',
+    searchPlaceholder: 'Search surah...',
+    tafsir: 'Tafsir',
+    menuTitle: 'Menu',
+    menuTooltip: 'Menu',
+    langSelectAria: 'Language (menus & Quran text)',
+    navHome: 'Home',
+    navBookmarks: 'Bookmarks',
+    navFeedback: 'Feedback',
+    navContribute: 'Contribute',
+    navAbout: 'About',
+    loadingSurahs: 'Loading surahs...',
+    loading: 'Loading...',
+    loadingTafsir: 'Loading tafsir...',
+    searchLabelSearching: 'Search (offline + cache)',
+    searchBtnAll: 'Search all surahs',
+    searchLoading: 'Loading...',
+    searchNone: 'No results found',
+    searchFound: '{n} results found',
+    metaAyahs: 'ayahs',
+    bookmarksEmpty: 'No bookmarks yet',
+    pageFeedback: 'Feedback',
+    pageContribute: 'Contribute',
+    pageAbout: 'About',
+    feedbackIntro:
+      'Share bugs, ideas, or questions. Your answers are collected in our Typeform (secure form provider).',
+    feedbackConnectTitle: 'Connect your Typeform',
+    feedbackConnectBody:
+      'In js/render.js, set TYPEFORM_FEEDBACK_ID from your published form’s share link (the part after /to/). Then reload this page.',
+    contributeTitle: 'Contribute',
+    contributeBody: 'We’ll add PayPal / bank transfer details here soon.',
+    aboutTitle: 'About Quran Bulak',
+    aboutBody1:
+      'We are a small group of Quran enthusiasts building a simple, fast Quran reading experience for Central Asian audiences.',
+    aboutBody2:
+      'Our focus is mindful reading: Arabic text, translations, tafsir, and helpful study tools — with an interface that works well on mobile.',
+    aboutBody3: 'Feedback is welcome — use the Feedback page from the menu.',
+    wMean: 'Meaning',
+    wPos: 'Position',
+    wpPosFmt: 'Word {word} • Ayah {ayah}',
+    autoPlay: 'Auto ⏩',
+    errGeneric: 'Something went wrong while loading. Check your connection and try again.',
+    titleDoc: 'Quran Bulak',
+    ttWbw: 'Toggle word-by-word view',
+    ttTranslit: 'Transliteration',
+    btnWbw: 'Word by Word',
+    btnPhonetic: 'Phonetic',
+    ttContinuous: 'Continuous play',
+    ttTafsirRate: 'Tafsir speech speed',
+    ttStopTafsirTts: 'Stop tafsir audio',
+    ttPlayTafsirTts: 'Play tafsir (browser)',
+    ttPlayKyTafsir: 'Play Kyrgyz tafsir audio',
+    ttPlayKyTrans: 'Play Kyrgyz translation audio',
+    wbwNote: '⟡ Word meanings shown in English (WBW not available in {lang})'
+  },
+  ru: {
+    tagline: 'Чтение и изучение Корана',
+    btnSearch: 'Поиск',
+    btnBookmark: 'Закладки',
+    searchPlaceholder: 'Поиск суры...',
+    tafsir: 'Тафсир',
+    menuTitle: 'Меню',
+    menuTooltip: 'Меню',
+    langSelectAria: 'Язык (меню и текст Корана)',
+    navHome: 'Главная',
+    navBookmarks: 'Закладки',
+    navFeedback: 'Отзыв',
+    navContribute: 'Поддержать',
+    navAbout: 'О приложении',
+    loadingSurahs: 'Загрузка сур…',
+    loading: 'Загрузка…',
+    loadingTafsir: 'Загрузка тафсира…',
+    searchLabelSearching: 'Поиск (offline + cache)',
+    searchBtnAll: 'Искать во всех сурах',
+    searchLoading: 'Загрузка…',
+    searchNone: 'Ничего не найдено',
+    searchFound: '{n} результатов найдено',
+    metaAyahs: 'аятов',
+    bookmarksEmpty: 'Закладок пока нет',
+    pageFeedback: 'Отзыв',
+    pageContribute: 'Поддержать',
+    pageAbout: 'О приложении',
+    feedbackIntro:
+      'Сообщите об ошибке, идее или вопросе. Ответы собираются через Typeform (безопасная форма).',
+    feedbackConnectTitle: 'Подключите Typeform',
+    feedbackConnectBody:
+      'В js/render.js задайте TYPEFORM_FEEDBACK_ID из ссылки опубликованной формы (часть после /to/). Затем перезагрузите страницу.',
+    contributeTitle: 'Поддержать',
+    contributeBody: 'Скоро добавим реквизиты PayPal / банковского перевода.',
+    aboutTitle: 'О Quran Bulak',
+    aboutBody1:
+      'Мы небольшая группа энтузиастов Корана и делаем простое и быстрое приложение для чтения для аудитории Центральной Азии.',
+    aboutBody2:
+      'Фокус — вдумчивое чтение: арабский текст, переводы, тафсир и удобство на мобильных.',
+    aboutBody3: 'Обратная связь приветствуется — страница «Отзыв» в меню.',
+    wMean: 'Значение',
+    wPos: 'Позиция',
+    wpPosFmt: 'Слово {word} • Аят {ayah}',
+    autoPlay: 'Авто ⏩',
+    errGeneric: 'Ошибка загрузки. Проверьте соединение и попробуйте снова.',
+    titleDoc: 'Quran Bulak',
+    ttWbw: 'Показать пословно',
+    ttTranslit: 'Транслитерация',
+    btnWbw: 'Пословно',
+    btnPhonetic: 'Транслит',
+    ttContinuous: 'Непрерывное воспроизведение',
+    ttTafsirRate: 'Скорость озвучивания тафсира',
+    ttStopTafsirTts: 'Остановить аудио тафсира',
+    ttPlayTafsirTts: 'Воспроизвести тафсир (браузер)',
+    ttPlayKyTafsir: 'Аудио тафсира (кыргызский)',
+    ttPlayKyTrans: 'Аудио перевода (кыргызский)',
+    wbwNote: '⟡ Значения слов на английском (нет WBW для {lang})'
+  }
+};
+
+function qbTranslate(key, vars) {
+  const code =
+    state && state.lang && (state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky')
+      ? state.lang
+      : readStoredLang();
+  let s =
+    (i18n[code] && i18n[code][key] != null
+      ? i18n[code][key]
+      : i18n.en[key] != null
+        ? i18n.en[key]
+        : i18n.ky[key] != null
+          ? i18n.ky[key]
+          : key);
+  if (typeof s === 'string' && vars && typeof vars === 'object') {
+    for (const [k, v] of Object.entries(vars)) {
+      s = s.split(`{${k}}`).join(String(v));
+    }
+  }
+  return s;
+}
+
+window.qbTranslate = qbTranslate;
+
+window.qbSetUiLang = function qbSetUiLang(code) {
+  if (code !== 'en' && code !== 'ru' && code !== 'ky') return;
+  localStorage.setItem('qb_lang', code);
+  const sources = getTafsirSourcesForLang(code);
+  const nextTaf = sources[0]?.id || null;
+  const patch = {
+    lang: code,
+    tafSrc: nextTaf,
+    tafOpen: null,
+    tafData: {},
+    playingKyTafsirKey: null
+  };
+  if (code !== 'ky') patch.wbwKyData = null;
+  if (state.view === 'surah' && state.cur) {
+    if (typeof pauseKyAuxAudio === 'function') pauseKyAuxAudio();
+    stopTafsirSpeech();
+    patch.vLoading = true;
+    loadTrans(state.cur.number, code);
+    fetchWBW(state.cur.number, code);
+  }
+  setState(patch);
+};
+
+window.qbToastKey = function qbToastKey(key) {
+  setState({ toastMsg: qbTranslate(key), toastUntil: Date.now() + 3800 });
+};
+
 // POS mapping kept for potential future UI use
 const POS = {
   N: 'Noun',
@@ -27,12 +265,15 @@ const POS = {
 let state = {
   view: 'home',
   menuOpen: false,
+  uiBookmarksOpen: false,
+  toastMsg: null,
+  toastUntil: 0,
   chapters: [],
   cur: null,
   verses: [],
   transText: [],
   translitEn: null,
-  lang: 'en',
+  lang: readStoredLang(),
   // Unified transliteration toggle:
   // - en: Latin transliteration from data/english-transliteration-rtf-updated.json
   // - ru/ky: Cyrillic transliteration from kazakh_translit.json (dataset label: KZ)
@@ -58,7 +299,10 @@ let state = {
   /** `surah:ayah` when kyAuxAudioTafsir is playing prerecorded Kyrgyz mokhtasar */
   playingKyTafsirKey: null,
   speechRate: 1.0,
-  showLang: false,
+  surahListFilter: readSurahListFilter(),
+  surahPickerOpen: false,
+  surahPickerQ: '',
+  surahPickerNonce: 0,
   loading: true,
   vLoading: false
 };
@@ -298,6 +542,19 @@ async function openSurahAt(surahNum, ayahNum) {
   setState({ pendingJump: { surah: surahNum, ayah: ayahNum } });
   await loadSurah(ch);
 }
+
+window.hl = function hl(el) {
+  try {
+    if (!el || !el.classList) return;
+    el.classList.add('verse-hl');
+    setTimeout(() => {
+      try {
+        el.classList.remove('verse-hl');
+      } catch (e) {}
+    }, 1200);
+  } catch (e) {}
+};
+
 
 /** Cache: URL -> true (exists) | false (missing) */
 const kyStaticAudioUrlCache = new Map();
@@ -588,6 +845,12 @@ function render() {
   const app = document.getElementById('app');
   if (!app) return;
 
+  // Lock page scroll when the side menu is open.
+  try {
+    document.body.style.overflow = state.menuOpen ? 'hidden' : '';
+    document.body.classList.toggle('menu-open', !!state.menuOpen);
+  } catch (e) {}
+
   const ae = document.activeElement;
   const wasFocused = ae && ae.tagName === 'INPUT' && ae.classList.contains('search');
   const cursorPos = wasFocused ? ae.selectionStart : 0;
@@ -607,20 +870,67 @@ function render() {
               ? renderAbout()
               : renderHome();
   app.appendChild(viewEl);
+
+  if (state.toastMsg && state.toastUntil > Date.now()) {
+    const toast = document.createElement('div');
+    toast.className = 'qb-toast';
+    toast.textContent = state.toastMsg;
+    app.appendChild(toast);
+    setTimeout(() => setState({ toastMsg: null, toastUntil: 0 }), 3200);
+  }
+
   requestAnimationFrame(() => {
     app.classList.add('view-enter-active');
     app.classList.remove('view-enter');
     initKyStaticAudioButtons();
-    // If we navigated from search, scroll to the requested ayah once rendered.
-    if (state.pendingJump && state.view === 'surah' && state.cur && state.cur.number === state.pendingJump.surah) {
+
+    document.documentElement.setAttribute('lang', state.lang || readStoredLang());
+    document.title = qbTranslate('titleDoc');
+
+    // If we navigated from search / juz, scroll to the requested ayah once rendered.
+    // This can race with async verse loading, so retry once after a short delay.
+    if (
+      state.pendingJump &&
+      state.view === 'surah' &&
+      state.cur &&
+      state.cur.number === state.pendingJump.surah &&
+      !state.vLoading
+    ) {
       const an = state.pendingJump.ayah;
       state.pendingJump = null;
-      requestAnimationFrame(() => {
-        const el = document.getElementById(`v-${an}`);
+      const tryScroll = (retry) => {
+        const markerId = `juzm-${state.cur.number}-${an}`;
+        const el = document.getElementById(markerId) || document.getElementById(`vc${an}`);
         if (el && el.scrollIntoView) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Prefer highlighting the verse, even when we scroll to the marker.
+          const vEl = document.getElementById(`vc${an}`);
+          if (vEl && typeof window.hl === 'function') window.hl(vEl);
+          return;
         }
-      });
+        if (retry) {
+          setTimeout(() => tryScroll(false), 500);
+        }
+      };
+      requestAnimationFrame(() => tryScroll(true));
+    }
+
+    // Surah selector modal: on open, center active surah and focus search.
+    if (state.surahPickerOpen && state.view === 'surah') {
+      const nonce = state.surahPickerNonce || 0;
+      if (window.__qcaSurahPickerHandledNonce !== nonce) {
+        window.__qcaSurahPickerHandledNonce = nonce;
+        requestAnimationFrame(() => {
+          try {
+            const active = document.querySelector('.surah-modal-row.on');
+            if (active && active.scrollIntoView) {
+              active.scrollIntoView({ block: 'center' });
+            }
+            const inp = document.querySelector('.surah-modal-search');
+            if (inp && inp.focus) inp.focus();
+          } catch (e) {}
+        });
+      }
     }
   });
 
@@ -634,6 +944,18 @@ function render() {
 }
 
 (async function init() {
+  document.documentElement.style.fontSize = '100%';
+  document.documentElement.setAttribute('lang', state.lang || readStoredLang());
+  document.title = qbTranslate('titleDoc');
+
+  // Global ESC handler for modals
+  window.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (state && state.surahPickerOpen) {
+      setState({ surahPickerOpen: false });
+    }
+  });
+
   await loadSurahNames();
 
   const initialSources = getTafsirSourcesForLang(state.lang);

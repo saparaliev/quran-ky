@@ -164,6 +164,7 @@ async function loadTrans(chNum, langCode) {
     } catch (e) {
       console.error('Fawaz translation error', e);
       setState({ transText: [] });
+      if (typeof window.qbToastKey === 'function') window.qbToastKey('errGeneric');
     }
     return;
   }
@@ -181,6 +182,7 @@ async function loadTrans(chNum, langCode) {
   } catch (e) {
     console.error('Translation error', e);
     setState({ transText: [] });
+    if (typeof window.qbToastKey === 'function') window.qbToastKey('errGeneric');
   }
 }
 

@@ -16,12 +16,162 @@ function h(tag, attrs, ...children) {
   return el;
 }
 
-/**
- * Typeform: publish a form at typeform.com, then copy the ID from the share URL:
- * https://form.typeform.com/to/XXXXXXXX — use only the XXXXXXXX part here.
- * Replies appear in the Typeform dashboard under Results.
- */
-const TYPEFORM_FEEDBACK_ID = '';
+function qbT(key, vars) {
+  return typeof window.qbTranslate === 'function' ? window.qbTranslate(key, vars) : key;
+}
+
+/** App language: menus, surah names, translations, WBW, and tafsir. */
+function renderUiLangDropdown() {
+  const s = state;
+  const sel = h(
+    'select',
+    {
+      className: 'ui-lang-select',
+      title: qbT('langSelectAria'),
+      'aria-label': qbT('langSelectAria'),
+      onChange: e => window.qbSetUiLang(e.target.value)
+    },
+    h('option', { value: 'ky' }, 'Кыргызча'),
+    h('option', { value: 'en' }, 'English'),
+    h('option', { value: 'ru' }, 'Русский')
+  );
+  sel.value = s.lang;
+  return h('div', { className: 'topbar-lang' }, sel);
+}
+
+function renderTopBarRight() {
+  return h(
+    'div',
+    { className: 'topbar-right' },
+    renderUiLangDropdown()
+  );
+}
+
+function surahPickerTitle() {
+  const lang = state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky' ? state.lang : 'ky';
+  if (lang === 'ky') return 'Сүрөлөр';
+  if (lang === 'ru') return 'Суры';
+  return 'Surahs';
+}
+
+function renderSurahPickerOverlay() {
+  const s = state;
+  if (!s.surahPickerOpen) return null;
+
+  const q = String(s.surahPickerQ || '').trim();
+  const qf = q.toLocaleLowerCase();
+
+  const list = (s.chapters || []).slice().sort((a, b) => a.number - b.number);
+  const filtered = !q
+    ? list
+    : list.filter(ch => {
+        const sn = ch.number;
+        const nm = (SURAH_NAMES[s.lang]?.[sn - 1] || '').toLocaleLowerCase();
+        const tr = (SURAH_TR[s.lang]?.[sn - 1] || '').toLocaleLowerCase();
+        const en1 = String(ch.englishName || '').toLocaleLowerCase();
+        const en2 = String(ch.englishNameTranslation || '').toLocaleLowerCase();
+        const ar = String(ch.name || '');
+        return (
+          String(sn).includes(q) ||
+          nm.includes(qf) ||
+          tr.includes(qf) ||
+          en1.includes(qf) ||
+          en2.includes(qf) ||
+          ar.includes(q)
+        );
+      });
+
+  const rows =
+    s.loading && (!s.chapters || !s.chapters.length)
+      ? [h('div', { className: 'surah-modal-empty' }, qbT('loadingSurahs'))]
+      : filtered.map(ch => {
+          const isCur = s.cur && s.cur.number === ch.number;
+          return h(
+            'button',
+            {
+              type: 'button',
+              className: `surah-modal-row ${isCur ? 'on' : ''}`,
+              onClick: () => {
+                setState({ surahPickerOpen: false });
+                loadSurah(ch);
+              }
+            },
+            h('div', { className: 'surah-modal-num' }, String(ch.number)),
+            h(
+              'div',
+              { className: 'surah-modal-mid' },
+              h('div', { className: 'surah-modal-name' }, SURAH_NAMES[s.lang]?.[ch.number - 1] || ch.englishName)
+            ),
+            h('div', { className: 'surah-modal-ar' }, ch.name)
+          );
+        });
+
+  return h(
+    'div',
+    { className: 'surah-ovl', onClick: () => setState({ surahPickerOpen: false }) },
+    h(
+      'div',
+      { className: 'surah-modal', onClick: e => e.stopPropagation() },
+      h(
+        'div',
+        { className: 'surah-modal-hdr' },
+        h('div', { className: 'surah-modal-title' }, surahPickerTitle()),
+        h(
+          'button',
+          { type: 'button', className: 'surah-modal-x', onClick: () => setState({ surahPickerOpen: false }) },
+          '✕'
+        )
+      ),
+      h('input', {
+        className: 'surah-modal-search',
+        placeholder: qbT('searchPlaceholder'),
+        value: s.surahPickerQ || '',
+        onInput: e => setState({ surahPickerQ: e.target.value })
+      }),
+      h('div', { className: 'surah-modal-list' }, ...rows)
+    )
+  );
+}
+
+function getJuzStartPos(juzNum) {
+  try {
+    if (typeof JUZ_START === 'undefined' || !JUZ_START) return null;
+    const p = JUZ_START[juzNum];
+    if (!p) return null;
+    const s = parseInt(p.s, 10);
+    const v = parseInt(p.v, 10);
+    if (!Number.isFinite(s) || !Number.isFinite(v)) return null;
+    return { s, v };
+  } catch (e) {
+    return null;
+  }
+}
+
+
+function openBookmarksHome() {
+  stopAudio();
+  stopTafsirSpeech();
+  if (typeof pauseKyAuxAudio === 'function') pauseKyAuxAudio();
+  setState({ view: 'home', menuOpen: false, uiBookmarksOpen: true });
+}
+
+function openFeedback() {
+  console.log('[typeform] openFeedback click');
+  closeMenu();
+  setTimeout(() => {
+    console.log('[typeform] openFeedback timeout fired', { hasTf: !!window.tf });
+    if (window.tf) {
+      console.log('[typeform] creating popup for id', 'u1xJgcyY');
+      window.tf
+        .createPopup('u1xJgcyY', {
+          autoClose: 3000
+        })
+        .open();
+    } else {
+      console.error('Typeform script not loaded');
+    }
+  }, 300);
+}
 
 function closeMenu() {
   if (state.menuOpen) setState({ menuOpen: false });
@@ -43,26 +193,39 @@ function renderMenuOverlay() {
     h(
       'div',
       { className: 'menu-drawer', onClick: e => e.stopPropagation() },
-      h('div', { className: 'menu-title' }, 'Menu'),
+      h('div', { className: 'menu-title' }, qbT('menuTitle')),
       h(
         'button',
         { className: `menu-item ${s.view === 'home' ? 'on' : ''}`, onClick: () => navigate('home') },
-        'Home'
+        qbT('navHome')
       ),
       h(
         'button',
-        { className: `menu-item ${s.view === 'feedback' ? 'on' : ''}`, onClick: () => navigate('feedback') },
-        'Feedback'
+        {
+          className: 'menu-item',
+          onClick: () => openBookmarksHome()
+        },
+        qbT('navBookmarks')
+      ),
+      h(
+        'button',
+        {
+          className: `menu-item ${s.view === 'feedback' ? 'on' : ''}`,
+          onClick: () => {
+            openFeedback();
+          }
+        },
+        qbT('navFeedback')
       ),
       h(
         'button',
         { className: `menu-item ${s.view === 'contribute' ? 'on' : ''}`, onClick: () => navigate('contribute') },
-        'Contribute'
+        qbT('navContribute')
       ),
       h(
         'button',
         { className: `menu-item ${s.view === 'about' ? 'on' : ''}`, onClick: () => navigate('about') },
-        'About'
+        qbT('navAbout')
       )
     )
   );
@@ -73,17 +236,180 @@ function renderTopLeftMenuButton() {
     'button',
     {
       className: 'menu-btn',
-      title: 'Menu',
+      title: qbT('menuTooltip'),
       onClick: () => setState({ menuOpen: !state.menuOpen })
     },
     '☰'
   );
 }
 
+function surahFilterTabLabel(mode) {
+  const lang = state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky' ? state.lang : 'ky';
+  const L = {
+    all: { ky: 'Баары', en: 'All', ru: 'Все' },
+    meccan: { ky: 'Мекке', en: 'Meccan', ru: 'Меккинские' },
+    medinan: { ky: 'Мадина', en: 'Medinan', ru: 'Мединские' },
+    juz: { ky: 'Жуз боюнча', en: 'By Juz', ru: 'По Джузу' }
+  };
+  return L[mode][lang] || L[mode].en;
+}
+
+function juzGroupHeaderText(juzNum) {
+  const lang = state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky' ? state.lang : 'ky';
+  if (lang === 'ky') return `Жуз ${juzNum}`;
+  if (lang === 'ru') return `Джуз ${juzNum}`;
+  return `Juz ${juzNum}`;
+}
+
+function applySurahRevFilter(chapters, mode) {
+  if (mode === 'meccan') {
+    return chapters.filter(c => String(c.revelationType || '').toLowerCase() === 'meccan');
+  }
+  if (mode === 'medinan') {
+    return chapters.filter(c => String(c.revelationType || '').toLowerCase() === 'medinan');
+  }
+  return chapters;
+}
+
+function getSurahJuzNum(sn) {
+  if (typeof JUZ === 'undefined' || JUZ[sn] == null) return 1;
+  return JUZ[sn];
+}
+
+const SURAH_JUZ_SPANS = {
+  2: [1, 2, 3],
+  3: [3, 4],
+  4: [4, 5, 6],
+  5: [6],
+  6: [6, 7, 8],
+  7: [8, 9],
+  9: [10, 11],
+  10: [11],
+  11: [11, 12],
+  12: [12, 13],
+  13: [13],
+  16: [14],
+  17: [15],
+  18: [15, 16],
+  20: [16],
+  21: [17],
+  23: [18],
+  26: [19]
+};
+
+function getSurahJuzSpan(sn) {
+  if (SURAH_JUZ_SPANS[sn]) return SURAH_JUZ_SPANS[sn];
+  return [getSurahJuzNum(sn)];
+}
+
+function buildJuzGroupedRows(chapters) {
+  const rows = [];
+  const byJuz = new Map();
+  for (const ch of chapters) {
+    const span = getSurahJuzSpan(ch.number);
+    for (const jn of span) {
+      if (!byJuz.has(jn)) byJuz.set(jn, []);
+      byJuz.get(jn).push(ch);
+    }
+  }
+  for (let j = 1; j <= 30; j++) {
+    const arr = byJuz.get(j);
+    if (!arr || !arr.length) continue;
+    rows.push({ kind: 'hdr', juz: j });
+    for (const ch of arr) rows.push({ kind: 'ch', ch });
+  }
+  return rows;
+}
+
+/** Localized Meccan/Medinan for surah list meta (ky/en/ru). */
+function revelationTypeLabel(ch) {
+  const lang = state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky' ? state.lang : 'ky';
+  const t = String(ch.revelationType || '').toLowerCase();
+  const meccan = { ky: 'Мекке', en: 'Meccan', ru: 'Меккинская' };
+  const medinan = { ky: 'Мадина', en: 'Medinan', ru: 'Мединская' };
+  if (t === 'medinan') return medinan[lang] || medinan.en;
+  return meccan[lang] || meccan.en;
+}
+
+function revelationTypeKey(ch) {
+  const t = String(ch.revelationType || '').toLowerCase();
+  return t === 'medinan' ? 'medinan' : 'meccan';
+}
+
+function juzSpanLabelList(sn) {
+  const lang = state.lang === 'en' || state.lang === 'ru' || state.lang === 'ky' ? state.lang : 'ky';
+  const base = lang === 'ky' ? 'Жуз' : lang === 'ru' ? 'Джуз' : 'Juz';
+  return getSurahJuzSpan(sn).map(j => `${base} ${j}`);
+}
+
+function renderChapterRow(ch, opts) {
+  const s = state;
+  const mode = opts && opts.mode ? opts.mode : 'all';
+  const revKey = revelationTypeKey(ch);
+  const revLabel = revelationTypeLabel(ch);
+  const rightMeta =
+    mode === 'juz'
+      ? juzSpanLabelList(ch.number).join(' · ')
+      : h(
+          'span',
+          { className: 'rev-badge' },
+          h('span', { className: `rev-dot rev-dot--${revKey}` }),
+          revLabel
+        );
+  return h(
+    'button',
+    { className: 'ch-btn', onClick: () => loadSurah(ch) },
+    h('div', { className: 'ch-num' }, String(ch.number)),
+    h(
+      'div',
+      { style: { flex: '1', minWidth: '0' } },
+      h(
+        'div',
+        { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+        h(
+          'span',
+          { className: 'ch-name' },
+          SURAH_NAMES[s.lang]?.[ch.number - 1] || ch.englishName
+        ),
+        h('span', { className: 'ch-ar' }, ch.name)
+      ),
+      h(
+        'div',
+        { style: { display: 'flex', justifyContent: 'space-between' }, className: 'ch-meta' },
+        h('span', {}, SURAH_TR[s.lang]?.[ch.number - 1] || ch.englishNameTranslation),
+        h('span', {}, `${ch.numberOfAyahs} ${qbT('metaAyahs')} • `, rightMeta)
+      )
+    )
+  );
+}
+
+function renderSurahFilterTabs() {
+  const cur = state.surahListFilter || 'all';
+  const modes = ['all', 'meccan', 'medinan', 'juz'];
+  return h(
+    'div',
+    { className: 'surah-filter-tabs' },
+    ...modes.map(mode =>
+      h(
+        'button',
+        {
+          type: 'button',
+          className: `surah-filter-pill ${cur === mode ? 'surah-filter-pill--active' : ''}`,
+          onClick: () => {
+            localStorage.setItem('qb_filter', mode);
+            setState({ surahListFilter: mode });
+          }
+        },
+        surahFilterTabLabel(mode)
+      )
+    )
+  );
+}
+
 function renderHome() {
   const s = state;
   const q = (s.q || '').toLowerCase();
-  const filtered = s.chapters.filter(c => {
+  const qFiltered = s.chapters.filter(c => {
     if (!q) return true;
     const nm = (SURAH_NAMES[s.lang]?.[c.number - 1] || '').toLowerCase();
     const tr = (SURAH_TR[s.lang]?.[c.number - 1] || '').toLowerCase();
@@ -97,6 +423,33 @@ function renderHome() {
     );
   });
 
+  const bmPanel = s.uiBookmarksOpen
+    ? h(
+        'div',
+        { className: 'ctr', style: { padding: '0 16px 12px' } },
+        (s.bmarks || []).length
+          ? h(
+              'div',
+              { className: 'bm-strip' },
+              ...(s.bmarks || []).map(vk => {
+                const parts = String(vk).split(':');
+                const sn = parseInt(parts[0], 10);
+                const an = parseInt(parts[1], 10);
+                return h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'bm-chip',
+                    onClick: () => openSurahAt(sn, an)
+                  },
+                  vk
+                );
+              })
+            )
+          : h('div', { style: { color: '#94a3b8', fontSize: '13px' } }, qbT('bookmarksEmpty'))
+      )
+    : null;
+
   return h(
     'div',
     {},
@@ -106,132 +459,107 @@ function renderHome() {
       h(
         'div',
         { className: 'ctr' },
-        h('div', { className: 'topbar' }, renderTopLeftMenuButton(), h('div', { className: 'topbar-spacer' })),
-        h('div', { className: 'bismillah' }, 'بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ'),
-        h('div', { className: 'title' }, 'Quran Central Asia'),
-        h('div', { className: 'sub' }, "Кыргызча • English • Русский"),
         h(
           'div',
-          { style: { display: 'flex', justifyContent: 'center', marginTop: '10px' } },
-          (() => {
-            const sel = h(
-              'select',
-              {
-                className: 'home-lang-select',
-                onChange: e => {
-                  const lang = e.target.value;
-                  const sources = getTafsirSourcesForLang(lang);
-                  const nextTaf = sources[0]?.id || null;
-                  setState({ lang, tafSrc: nextTaf });
-                }
-              },
-              ...LANGS.map(l => h('option', { value: l.code }, `${l.flag} ${l.name}`))
-            );
-            sel.value = s.lang;
-            return sel;
-          })()
+          { className: 'topbar' },
+          renderTopLeftMenuButton(),
+          h('div', { className: 'topbar-fill' }),
+          renderTopBarRight()
         ),
+        h('div', { className: 'title' }, 'Quran Bulak'),
+        h('div', { className: 'sub' }, qbT('tagline')),
         h(
           'div',
-          { className: 'search-wrap' },
-          h('svg', {
-            innerHTML:
-              '<path stroke="currentColor" stroke-width="2" fill="none" d="M21 21l-5-5m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>',
-            style: { position: 'absolute', left: '12px', top: '11px', width: '16px', height: '16px' },
-            viewBox: '0 0 24 24'
-          }),
-          h('input', {
-            className: 'search',
-            placeholder: 'Search surahs...',
-            value: s.q,
-            onInput: e => {
-              const val = e.target.value;
-              // Update query immediately; also show instant chapter-name matches for 3+ chars
-              // so UI doesn't appear empty while debounced search runs.
-              const trimmed = String(val || '').trim();
-              const isNum = /^\d{1,3}$/.test(trimmed) ? parseInt(trimmed, 10) : null;
-              const doFull = trimmed.length >= 3 || (isNum && isNum >= 1 && isNum <= 114);
-              if (doFull) {
-                const chapterGroups = buildChapterGroups(trimmed);
-                setState({ q: val, searchResults: chapterGroups, searchCount: 0 });
-              } else {
-                setState({ q: val, searchResults: null, searchCount: 0 });
+          { className: 'home-tools' },
+          h(
+            'div',
+            { className: 'search-wrap' },
+            h('svg', {
+              innerHTML:
+                '<path stroke="currentColor" stroke-width="2" fill="none" d="M21 21l-5-5m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>',
+              style: { position: 'absolute', left: '12px', top: '11px', width: '16px', height: '16px' },
+              viewBox: '0 0 24 24'
+            }),
+            h('input', {
+              className: 'search',
+              placeholder: qbT('searchPlaceholder'),
+              value: s.q,
+              onInput: e => {
+                const val = e.target.value;
+                // Update query immediately; also show instant chapter-name matches for 3+ chars
+                // so UI doesn't appear empty while debounced search runs.
+                const trimmed = String(val || '').trim();
+                const isNum = /^\d{1,3}$/.test(trimmed) ? parseInt(trimmed, 10) : null;
+                const doFull = trimmed.length >= 3 || (isNum && isNum >= 1 && isNum <= 114);
+                if (doFull) {
+                  const chapterGroups = buildChapterGroups(trimmed);
+                  setState({ q: val, searchResults: chapterGroups, searchCount: 0 });
+                } else {
+                  setState({ q: val, searchResults: null, searchCount: 0 });
+                }
+                scheduleFullSearch(val);
               }
-              scheduleFullSearch(val);
-            }
-          })
+            })
+          )
         )
       )
     ),
+    bmPanel,
     h(
       'div',
       { className: 'ctr', style: { padding: '16px' } },
       s.loading
-        ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), 'Loading surahs...')
+        ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), qbT('loadingSurahs'))
         : (() => {
             const rawQ = (s.q || '').trim();
             const isNum = /^\d{1,3}$/.test(rawQ) ? parseInt(rawQ, 10) : null;
             const doFull = rawQ.length >= 3 || (isNum && isNum >= 1 && isNum <= 114);
             if (!doFull) {
-              return filtered.map(ch =>
-            h(
-              'button',
-              { className: 'ch-btn', onClick: () => loadSurah(ch) },
-              h('div', { className: 'ch-num' }, String(ch.number)),
-              h(
+              const mode = s.surahListFilter || 'all';
+              const filterEl = renderSurahFilterTabs();
+              if (mode === 'juz') {
+                const rows = buildJuzGroupedRows(qFiltered);
+                return h(
+                  'div',
+                  { className: 'surah-list-sidebar' },
+                  filterEl,
+                  ...rows.map(r =>
+                    r.kind === 'hdr'
+                      ? h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'juz-group-hdr juz-group-hdr-btn',
+                            onClick: async () => {
+                              const p = getJuzStartPos(r.juz);
+                              if (!p) return;
+                              await openSurahAt(p.s, p.v);
+                            }
+                          },
+                          juzGroupHeaderText(r.juz)
+                        )
+                      : renderChapterRow(r.ch, { mode: 'juz' })
+                  )
+                );
+              }
+              const list = applySurahRevFilter(qFiltered, mode);
+              return h(
                 'div',
-                { style: { flex: '1', minWidth: '0' } },
-                h(
-                  'div',
-                  { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-                  h(
-                    'span',
-                    { className: 'ch-name' },
-                    SURAH_NAMES[s.lang]?.[ch.number - 1] || ch.englishName
-                  ),
-                  h('span', { className: 'ch-ar' }, ch.name)
-                ),
-                h(
-                  'div',
-                  { style: { display: 'flex', justifyContent: 'space-between' }, className: 'ch-meta' },
-                  h(
-                    'span',
-                    {},
-                    SURAH_TR[s.lang]?.[ch.number - 1] || ch.englishNameTranslation
-                  ),
-                  h('span', {}, `${ch.numberOfAyahs} ayahs • ${String(ch.revelationType || '').toLowerCase()}`)
-                )
-              )
-            )
+                { className: 'surah-list-sidebar' },
+                filterEl,
+                ...list.map(ch => renderChapterRow(ch, { mode }))
               );
             }
 
             const groups = s.searchResults || [];
             const hasAnyResults = groups.length > 0;
-            const UI =
-              s.lang === 'en'
-                ? {
-                    labelSearching: 'Search (offline + cache)',
-                    btnAll: 'Search all surahs',
-                    loading: 'Loading...',
-                    none: 'No results found',
-                    found: n => `${n} results found`
-                  }
-                : s.lang === 'ky'
-                  ? {
-                      labelSearching: 'Издөө (offline + cache)',
-                      btnAll: 'Search all surahs',
-                      loading: 'Жүктөлүүдө...',
-                      none: 'Эч нерсе табылган жок',
-                      found: n => `${n} нетижесе табылды`
-                    }
-                  : {
-                      labelSearching: 'Поиск (offline + cache)',
-                      btnAll: 'Search all surahs',
-                      loading: 'Загрузка...',
-                      none: 'Ничего не найдено',
-                      found: n => `${n} результатов найдено`
-                    };
+            const UI = {
+              labelSearching: qbT('searchLabelSearching'),
+              btnAll: qbT('searchBtnAll'),
+              loading: qbT('searchLoading'),
+              none: qbT('searchNone'),
+              found: n => qbT('searchFound', { n })
+            };
             const topRow = h(
               'div',
               {
@@ -347,7 +675,13 @@ function renderPageShell(title, bodyEl) {
       h(
         'div',
         { className: 'ctr' },
-        h('div', { className: 'topbar' }, renderTopLeftMenuButton(), h('div', { className: 'page-title' }, title)),
+        h(
+          'div',
+          { className: 'topbar' },
+          renderTopLeftMenuButton(),
+          h('div', { className: 'page-title' }, title),
+          renderTopBarRight()
+        ),
       )
     ),
     h('div', { className: 'ctr', style: { padding: '16px' } }, bodyEl),
@@ -356,56 +690,24 @@ function renderPageShell(title, bodyEl) {
 }
 
 function renderFeedback() {
-  const intro = h(
-    'div',
-    { className: 'page-card', style: { marginBottom: '14px' } },
-    h(
-      'div',
-      { className: 'page-p' },
-      'Share bugs, ideas, or questions. Your answers are collected in our Typeform (secure form provider).'
-    )
+  // Feedback is handled via Typeform popup from the menu.
+  return renderPageShell(
+    qbT('pageFeedback'),
+    h('div', { className: 'page-card' }, qbT('feedbackIntro'))
   );
-
-  const id = String(TYPEFORM_FEEDBACK_ID || '').trim();
-  if (!id) {
-    const note = h(
-      'div',
-      { className: 'page-card typeform-setup-note' },
-      h('div', { className: 'page-h' }, 'Connect your Typeform'),
-      h(
-        'div',
-        { className: 'page-p' },
-        'In js/render.js, set TYPEFORM_FEEDBACK_ID to the ID from your published form’s share link (the part after /to/). Then reload this page.'
-      )
-    );
-    return renderPageShell('Feedback', h('div', {}, intro, note));
-  }
-
-  const src = `https://form.typeform.com/to/${encodeURIComponent(id)}`;
-  const frame = h('iframe', {
-    className: 'typeform-frame',
-    src,
-    title: 'Feedback',
-    loading: 'lazy',
-    allow: 'microphone; camera; geolocation; autoplay; encrypted-media; fullscreen'
-  });
-  frame.setAttribute('allowfullscreen', '');
-
-  const wrap = h('div', { className: 'typeform-wrap' }, frame);
-  return renderPageShell('Feedback', h('div', {}, intro, wrap));
 }
 
 function renderContribute() {
   return renderPageShell(
-    'Contribute',
+    qbT('pageContribute'),
     h(
       'div',
       { className: 'page-card' },
-      h('div', { className: 'page-h' }, 'Contribute'),
+      h('div', { className: 'page-h' }, qbT('contributeTitle')),
       h(
         'div',
         { className: 'page-p' },
-        'We’ll add PayPal / bank transfer details here soon.'
+        qbT('contributeBody')
       )
     )
   );
@@ -413,25 +715,25 @@ function renderContribute() {
 
 function renderAbout() {
   return renderPageShell(
-    'About',
+    qbT('pageAbout'),
     h(
       'div',
       { className: 'page-card' },
-      h('div', { className: 'page-h' }, 'About Quran Central Asia'),
+      h('div', { className: 'page-h' }, qbT('aboutTitle')),
       h(
         'div',
         { className: 'page-p' },
-        'We are a small group of Quran enthusiasts building a simple, fast Quran reading experience for Central Asian audiences.'
+        qbT('aboutBody1')
       ),
       h(
         'div',
         { className: 'page-p', style: { marginTop: '10px' } },
-        'Our focus is mindful reading: Arabic text, translations, tafsir, and helpful study tools — with an interface that works well on mobile.'
+        qbT('aboutBody2')
       ),
       h(
         'div',
         { className: 'page-p', style: { marginTop: '10px', color: '#94a3b8' } },
-        'Feedback is welcome — use the Feedback page from the menu.'
+        qbT('aboutBody3')
       )
     )
   );
@@ -442,6 +744,30 @@ function renderSurah() {
   const ch = s.cur;
   if (!ch) return h('div');
   const curAN = s.playing ? parseInt(s.playing.split(':')[1], 10) : null;
+  const lang = s.lang === 'en' || s.lang === 'ru' || s.lang === 'ky' ? s.lang : 'ky';
+
+  const juzStartKeyToNum = (() => {
+    const m = new Map();
+    try {
+      if (typeof JUZ_START !== 'undefined' && JUZ_START) {
+        for (const [juzStr, pos] of Object.entries(JUZ_START)) {
+          const jn = parseInt(juzStr, 10);
+          const sn = pos && typeof pos === 'object' ? parseInt(pos.s, 10) : NaN;
+          const vn = pos && typeof pos === 'object' ? parseInt(pos.v, 10) : NaN;
+          if (Number.isFinite(jn) && Number.isFinite(sn) && Number.isFinite(vn)) {
+            m.set(`${sn}:${vn}`, jn);
+          }
+        }
+      }
+    } catch (e) {}
+    return m;
+  })();
+
+  function juzMarkerLabel(n) {
+    if (lang === 'ky') return `۞ Жуз ${n} башталат`;
+    if (lang === 'ru') return `۞ Джуз ${n} начинается`;
+    return `۞ Juz ${n} begins`;
+  }
 
   const hdr = h(
     'div',
@@ -469,102 +795,62 @@ function renderSurah() {
           'div',
           { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
           h(
-            'span',
-            { className: 's-title' },
-            SURAH_NAMES[s.lang]?.[ch.number - 1] || ch.englishName
+            'button',
+            {
+              type: 'button',
+              className: 's-title-btn',
+              onClick: () =>
+                setState(s0 => ({
+                  surahPickerOpen: true,
+                  surahPickerQ: '',
+                  surahPickerNonce: (s0.surahPickerNonce || 0) + 1
+                }))
+            },
+            h('span', { className: 's-title' }, SURAH_NAMES[s.lang]?.[ch.number - 1] || ch.englishName),
+            h('span', { className: 's-chev', 'aria-hidden': 'true' }, '▾')
           ),
           h('span', { className: 's-ar' }, ch.name)
         ),
         h(
           'div',
           { className: 's-meta' },
-          `${SURAH_TR[s.lang]?.[ch.number - 1] || ch.englishNameTranslation} • ${ch.numberOfAyahs} ayahs`
+          `${SURAH_TR[s.lang]?.[ch.number - 1] || ch.englishNameTranslation} • ${ch.numberOfAyahs} ${qbT(
+            'metaAyahs'
+          )}`
         )
       ),
       h(
         'button',
         {
           className: `pill ${s.wbw ? 'pill-on' : 'pill-off'}`,
-          title: 'Toggle word-by-word view',
+          title: qbT('ttWbw'),
           onClick: () => setState({ wbw: !s.wbw })
         },
-        'WBW'
+        qbT('btnWbw')
       ),
       h(
         'button',
         {
           className: `pill ${s.showTranslit ? 'pill-on' : 'pill-off'}`,
-          title:
-            s.lang === 'en' ? 'Transliteration (Latin)' : 'Transliteration (Cyrillic)',
+          title: qbT('ttTranslit'),
           onClick: () => {
             const next = !s.showTranslit;
             localStorage.setItem('qca_show_translit', next ? '1' : '0');
             setState({ showTranslit: next });
           }
         },
-        'ABC'
+        qbT('btnPhonetic')
       ),
       h(
         'button',
         {
           className: `pill ${s.continuous ? 'pill-on' : 'pill-off'}`,
           onClick: () => setState({ continuous: !s.continuous }),
-          title: 'Continuous play'
+          title: qbT('ttContinuous')
         },
-        s.continuous ? '⏩ Auto' : '⏩'
+        s.continuous ? qbT('autoPlay') : '⏩'
       ),
-      h(
-        'div',
-        { style: { position: 'relative' } },
-        h(
-          'button',
-          {
-            style: {
-              background: 'none',
-              border: 'none',
-              color: '#e2e8f0',
-              cursor: 'pointer',
-              padding: '4px',
-              fontSize: '18px'
-            },
-            onClick: () => setState({ showLang: !s.showLang })
-          },
-          '🌐'
-        ),
-        s.showLang
-          ? h(
-              'div',
-              { className: 'lang-dd' },
-              ...LANGS.map(l =>
-                h(
-                  'button',
-                  {
-                    className: `lang-btn ${s.lang === l.code ? 'on' : ''}`,
-                    onClick: () => {
-                      const sources = getTafsirSourcesForLang(l.code);
-                      const nextTaf = sources[0]?.id || null;
-                      if (typeof pauseKyAuxAudio === 'function') pauseKyAuxAudio();
-                      stopTafsirSpeech();
-                      setState({
-                        lang: l.code,
-                        showLang: false,
-                        vLoading: true,
-                        tafSrc: nextTaf,
-                        tafOpen: null,
-                        tafData: {},
-                        playingKyTafsirKey: null
-                      });
-                      loadTrans(ch.number, l.code);
-                      fetchWBW(ch.number, l.code);
-                    }
-                  },
-                  h('span', {}, `${l.flag}`),
-                  h('span', { className: 'lang-label' }, l.name)
-                )
-              )
-            )
-          : null
-      )
+      renderTopBarRight()
     )
   );
 
@@ -586,12 +872,13 @@ function renderSurah() {
       : null;
 
   const versesEl = s.vLoading
-    ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), 'Loading...')
+    ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), qbT('loading'))
     : h(
         'div',
         {},
         ...s.verses.map((v, i) => {
           const an = v.verse_number;
+          const jn = juzStartKeyToNum.get(`${ch.number}:${an}`) || null;
           const vk = `${ch.number}:${an}`;
           const isP = s.playing === vk;
           const isBM = s.bmarks.includes(vk);
@@ -627,7 +914,7 @@ function renderSurah() {
               h(
                 'button',
                 {
-                  className: `v-btn ${showT ? 'on' : ''}`,
+                  className: `v-btn v-btn-taf ${showT ? 'on' : ''}`,
                   onClick: () => {
                     if (showT) setState({ tafOpen: null });
                     else {
@@ -636,7 +923,7 @@ function renderSurah() {
                     }
                   }
                 },
-                '📖'
+                qbT('tafsir')
               )
             )
           );
@@ -659,9 +946,7 @@ function renderSurah() {
                       fontStyle: 'italic'
                     }
                   },
-                  '⟡ Word meanings shown in English (WBW not available in ' +
-                    (LANGS.find(l => l.code === s.lang)?.name || s.lang) +
-                    ')'
+                  qbT('wbwNote', { lang: LANGS.find(l => l.code === s.lang)?.name || s.lang })
                 )
               : null;
             arabicEl = h(
@@ -771,7 +1056,7 @@ function renderSurah() {
                       type: 'button',
                       className: 'ky-static-audio-btn',
                       style: { display: 'none' },
-                      title: 'Play Kyrgyz translation audio',
+                      title: qbT('ttPlayKyTrans'),
                       'data-ky-static-audio': kyTransUrl,
                       onClick: e => {
                         e.preventDefault();
@@ -792,7 +1077,6 @@ function renderSurah() {
             loadTaf(ch.number, an);
           }
           const tKey2 = `${activeTaf}:${ch.number}:${an}`;
-          const isSpeaking = s.speaking && s.speakingTafsirKey === tKey2;
           const isKyMokhtasar = s.lang === 'ky' && activeTaf === 'kyrgyz-mokhtasar';
           const kyTafUrl = `audio/tafsir/${ch.number}/${an}.mp3`;
 
@@ -809,56 +1093,7 @@ function renderSurah() {
           );
           if (activeTaf) tSel.value = activeTaf;
 
-          const rateSel = h(
-            'select',
-            {
-              className: 'taf-rate',
-              title: 'Tafsir speech speed',
-              onChange: e => {
-                const val = parseFloat(e.target.value);
-                setState({ speechRate: isNaN(val) ? 1.0 : val });
-              }
-            },
-            h('option', { value: '0.8' }, '0.8x'),
-            h('option', { value: '1.0' }, '1.0x'),
-            h('option', { value: '1.2' }, '1.2x')
-          );
-          rateSel.value = String(s.speechRate || 1.0);
-
-          const ttsBtn = h(
-            'button',
-            {
-              className: 'v-btn',
-              title: isSpeaking ? 'Stop tafsir audio' : 'Play tafsir audio (browser)',
-              onClick: () => {
-                const html = s.tafData[tKey2];
-                if (!html) return;
-                if (isSpeaking) {
-                  stopTafsirSpeech();
-                  render();
-                } else {
-                  playTafsirSpeech(ch.number, an, activeTaf, html);
-                }
-              }
-            },
-            isSpeaking ? '⏹' : '🔊'
-          );
-
-          const kyTafsirElBtn = h(
-            'button',
-            {
-              type: 'button',
-              className: 'v-btn ky-static-audio-btn',
-              style: { display: 'none' },
-              title: 'Play Kyrgyz tafsir audio',
-              'data-ky-static-audio': kyTafUrl,
-              onClick: e => {
-                e.preventDefault();
-                toggleKyTafsirPrerecorded(kyTafUrl, vk);
-              }
-            },
-            s.playingKyTafsirKey === vk ? '⏹' : '🔊'
-          );
+          // Tafsir audio buttons removed (keep text panel + toggle only).
 
           tafEl = h(
             'div',
@@ -866,22 +1101,30 @@ function renderSurah() {
             h(
               'div',
               { className: 'taf-hdr' },
-              h('span', { className: 'taf-label' }, '📖 Tafsir'),
+              h('span', { className: 'taf-label' }, qbT('tafsir')),
               h(
                 'div',
                 { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
-                tSel,
-                ...(isKyMokhtasar ? [kyTafsirElBtn] : [rateSel, ttsBtn])
+                tSel
               )
             ),
             h('div', {
               className: 'taf-content',
-              innerHTML: s.tafData[tKey2] || 'Loading tafsir...'
+              innerHTML: s.tafData[tKey2] || qbT('loadingTafsir')
             })
           );
           }
 
-          return h('div', { className: 'verse', id: `v-${an}` }, ctrl, arabicEl, translitEl, transEl, tafEl);
+          const verseNode = h('div', { className: 'verse', id: `vc${an}` }, ctrl, arabicEl, translitEl, transEl, tafEl);
+          if (!jn) return verseNode;
+          const marker = h(
+            'div',
+            { className: 'juz-marker', id: `juzm-${ch.number}-${an}` },
+            h('div', { className: 'juz-line' }),
+            h('span', {}, juzMarkerLabel(jn)),
+            h('div', { className: 'juz-line' })
+          );
+          return h('div', {}, marker, verseNode);
         })
       );
 
@@ -925,14 +1168,14 @@ function renderSurah() {
           h(
             'div',
             { className: 'wp-card' },
-            h('div', { className: 'wp-lbl' }, 'Meaning'),
+            h('div', { className: 'wp-lbl' }, qbT('wMean')),
             h('div', { className: 'wp-val' }, w.en || '—')
           ),
           h(
             'div',
             { className: 'wp-card' },
-            h('div', { className: 'wp-lbl' }, 'Position'),
-            h('div', { className: 'wp-val' }, `Word ${w.idx} • Ayah ${w.ayah}`)
+            h('div', { className: 'wp-lbl' }, qbT('wPos')),
+            h('div', { className: 'wp-val' }, qbT('wpPosFmt', { word: w.idx, ayah: w.ayah }))
           )
         )
       )
@@ -965,7 +1208,7 @@ function renderSurah() {
                     borderRadius: '8px'
                   }
                 },
-                'Auto ⏩'
+                qbT('autoPlay')
               )
             : null
         ),
@@ -1016,6 +1259,6 @@ function renderSurah() {
     versesEl
   );
 
-  return h('div', {}, hdr, bism, cont, wpEl, abEl, renderMenuOverlay());
+  return h('div', {}, hdr, bism, cont, wpEl, abEl, renderMenuOverlay(), renderSurahPickerOverlay());
 }
 

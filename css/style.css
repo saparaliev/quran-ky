@@ -5,6 +5,9 @@
 }
 
 :root {
+  --txt: var(--text-main);
+  --tmut: var(--text-softer);
+  --bdr: var(--border-subtle);
   --bg-main: #0a0f1a;
   --bg-elevated: #111827;
   --bg-elevated-soft: rgba(17, 24, 39, 0.7);
@@ -73,6 +76,16 @@ button {
 
 /* Keep fixed overlays truly viewport-fixed while menu open. */
 body.menu-open #app {
+  transform: none !important;
+}
+
+/* Same fix for feedback iframe overlay. */
+body.fb-open #app {
+  transform: none !important;
+}
+
+/* Ensure bottom audio bar stays viewport-fixed on all browsers. */
+body.abar-open #app {
   transform: none !important;
 }
 
@@ -316,6 +329,34 @@ body.menu-open #app {
   font-size: 13px;
   color: var(--text-soft);
   line-height: 1.7;
+}
+
+.page-p.about-main {
+  color: var(--txt);
+  white-space: pre-line;
+}
+
+.page-p.about-credit {
+  font-size: 11px;
+  color: var(--tmut);
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bdr);
+  white-space: pre-line;
+}
+
+.page-p.about-contact {
+  margin-top: 12px;
+  color: var(--txt);
+}
+
+.page-p.about-contact .about-email {
+  color: var(--gold);
+}
+
+.page-p.about-blessing {
+  margin-top: 10px;
+  color: var(--txt);
 }
 
 .fb-form {
@@ -848,6 +889,58 @@ body.menu-open #app {
   direction: rtl;
 }
 
+.fb-ovl {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 450;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  overscroll-behavior: contain;
+}
+
+.fb-modal {
+  width: min(800px, 80vw);
+  height: 80vh;
+  background: #ffffff;
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-strong);
+}
+
+@media (prefers-color-scheme: dark) {
+  .fb-modal {
+    background: #0b1220;
+  }
+}
+
+.fb-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(2, 6, 23, 0.65);
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+.fb-x:hover {
+  background: rgba(2, 6, 23, 0.9);
+}
+
+.fb-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 
 .v-ctrl {
   display: flex;
@@ -1210,8 +1303,83 @@ mark.qhl {
   max-width: 660px;
   margin: 0 auto;
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.abar-top {
+  width: 100%;
+  display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+
+.abar-seek-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.abar-seek {
+  flex: 1;
+  accent-color: var(--gold);
+}
+
+.abar-rem {
+  font-size: 12px;
+  color: var(--text-soft);
+  min-width: 52px;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.abar-bottom {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.abar-speeds {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.abar-speed {
+  border: none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--surf2);
+  color: var(--tdim);
+}
+
+.abar-speed.on {
+  background: var(--gold);
+  color: var(--bg-main);
+}
+
+.abar-continue {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #020617;
+  color: #94a3b8;
+}
+
+.abar-continue.on {
+  background: var(--gold);
+  color: var(--bg-main);
 }
 
 .abar-info {
@@ -1257,6 +1425,20 @@ mark.qhl {
   box-shadow: 0 10px 30px rgba(16, 185, 129, 0.6);
 }
 
+@media (max-width: 520px) {
+  .abar {
+    padding: 14px 16px;
+  }
+
+  .abar-speed {
+    padding: 8px 12px;
+  }
+
+  .abar-continue {
+    padding: 10px 14px;
+  }
+}
+
 /* Loading */
 
 .loading {
@@ -1275,6 +1457,17 @@ mark.qhl {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-right: 6px;
+}
+
+/* Small inline spinner (e.g. inside buttons) */
+.spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {

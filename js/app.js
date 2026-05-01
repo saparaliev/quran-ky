@@ -45,11 +45,12 @@ const i18n = {
     contributeTitle: 'Салым',
     contributeBody: 'Жакында PayPal / банк которууларынын реквизиттерин кошобуз.',
     aboutTitle: 'Quran Bulak тууралуу',
-    aboutBody1:
-      'Биз Чыгыш Азия аудиториясы үчүн жөнөкөй жана тез Куран окуу тажрыйбасын түзүүгө аракет кылган аз эле адамбыз.',
-    aboutBody2:
-      'Биздин максат — Араб тексти, котормолор, тафсир жана мобилдикке ыңгайлуу интерфейс аркылуу насыйаттуу окуу.',
-    aboutBody3: 'Пикирлер кошумча — менюдан «Пикир» баракчасын колдонуңуз.',
+    aboutMain:
+      'Биз Куранды тереңирээк үйрөнүүгө жардам берүүчү\nплатформа түзүүгө умтулган Куран энтузиасттарынын\nкичинекей тобубуз. QuranBulak — аяттарды ойлонуп,\nтүшүнүп окууга чакырат.',
+    aboutCredit:
+      'Арабча маалымат үчүн Tanzil долбооруна,\nаудио үчүн Everyayah.com\'го ыраазычылык билдиребиз.',
+    aboutContactPrefix: 'Байланыш:',
+    aboutBlessing: 'Алла кабыл кылсын! 🤲',
     wMean: 'Маани',
     wPos: 'Орун',
     wpPosFmt: 'Сөз {word} • {ayah}-аят',
@@ -61,12 +62,16 @@ const i18n = {
     btnWbw: 'Сөзмө-сөз',
     btnPhonetic: 'Транслит',
     ttContinuous: 'Улантуу менен окуу',
+    btnContinuePlay: 'Үзгүлтүксүз',
     ttTafsirRate: 'Тафсир үнү ылдамдыгы',
     ttStopTafsirTts: 'Тафсирди токтотуу',
     ttPlayTafsirTts: 'Тафсирди окуу (браузер)',
     ttPlayKyTafsir: 'Кыргызча тафсир аудиосу',
     ttPlayKyTrans: 'Кыргызча котормуу аудиосу',
     wbwNote: 'Сөз маанилери англисче көрсөтүлүүдө (WBW {lang} үчүн жеткиликтүү эмес)'
+    ,
+    tapToContinue: 'Улантуу үчүн таптаңыз',
+    audioLoadError: 'Аудио жүктөлбөдү — кийинки аятка өтүүдө'
   },
   en: {
     tagline: 'Quran Reading and Learning',
@@ -103,11 +108,12 @@ const i18n = {
     contributeTitle: 'Contribute',
     contributeBody: 'We’ll add PayPal / bank transfer details here soon.',
     aboutTitle: 'About Quran Bulak',
-    aboutBody1:
-      'We are a small group of Quran enthusiasts building a simple, fast Quran reading experience for Central Asian audiences.',
-    aboutBody2:
-      'Our focus is mindful reading: Arabic text, translations, tafsir, and helpful study tools — with an interface that works well on mobile.',
-    aboutBody3: 'Feedback is welcome — use the Feedback page from the menu.',
+    aboutMain:
+      'We are a small group of Quran enthusiasts seeking\nto create a platform that facilitates a deep learning\nexperience of the Quran. QuranBulak encourages\nmindful reading and reflection on every ayah.',
+    aboutCredit:
+      'We credit Tanzil for their Quran data and\nEveryayah.com for their recitations.',
+    aboutContactPrefix: 'Contact:',
+    aboutBlessing: 'May Allah accept it! 🤲',
     wMean: 'Meaning',
     wPos: 'Position',
     wpPosFmt: 'Word {word} • Ayah {ayah}',
@@ -119,12 +125,16 @@ const i18n = {
     btnWbw: 'Word by Word',
     btnPhonetic: 'Phonetic',
     ttContinuous: 'Continuous play',
+    btnContinuePlay: 'Continue Play',
     ttTafsirRate: 'Tafsir speech speed',
     ttStopTafsirTts: 'Stop tafsir audio',
     ttPlayTafsirTts: 'Play tafsir (browser)',
     ttPlayKyTafsir: 'Play Kyrgyz tafsir audio',
     ttPlayKyTrans: 'Play Kyrgyz translation audio',
     wbwNote: '⟡ Word meanings shown in English (WBW not available in {lang})'
+    ,
+    tapToContinue: 'Tap to continue',
+    audioLoadError: 'Audio failed to load — skipping to the next ayah.'
   },
   ru: {
     tagline: 'Чтение и изучение Корана',
@@ -161,11 +171,12 @@ const i18n = {
     contributeTitle: 'Поддержать',
     contributeBody: 'Скоро добавим реквизиты PayPal / банковского перевода.',
     aboutTitle: 'О Quran Bulak',
-    aboutBody1:
-      'Мы небольшая группа энтузиастов Корана и делаем простое и быстрое приложение для чтения для аудитории Центральной Азии.',
-    aboutBody2:
-      'Фокус — вдумчивое чтение: арабский текст, переводы, тафсир и удобство на мобильных.',
-    aboutBody3: 'Обратная связь приветствуется — страница «Отзыв» в меню.',
+    aboutMain:
+      'Мы небольшая группа энтузиастов Корана, стремящихся\nсоздать платформу для глубокого изучения Корана.\nQuranBulak призывает к вдумчивому чтению и\nразмышлению над каждым аятом.',
+    aboutCredit:
+      'Благодарим проект Tanzil за данные Корана\nи Everyayah.com за аудио рецитации.',
+    aboutContactPrefix: 'Контакт:',
+    aboutBlessing: 'Да примет Аллах! 🤲',
     wMean: 'Значение',
     wPos: 'Позиция',
     wpPosFmt: 'Слово {word} • Аят {ayah}',
@@ -177,12 +188,16 @@ const i18n = {
     btnWbw: 'Пословно',
     btnPhonetic: 'Транслит',
     ttContinuous: 'Непрерывное воспроизведение',
+    btnContinuePlay: 'Без остановки',
     ttTafsirRate: 'Скорость озвучивания тафсира',
     ttStopTafsirTts: 'Остановить аудио тафсира',
     ttPlayTafsirTts: 'Воспроизвести тафсир (браузер)',
     ttPlayKyTafsir: 'Аудио тафсира (кыргызский)',
     ttPlayKyTrans: 'Аудио перевода (кыргызский)',
     wbwNote: '⟡ Значения слов на английском (нет WBW для {lang})'
+    ,
+    tapToContinue: 'Нажмите, чтобы продолжить',
+    audioLoadError: 'Не удалось загрузить аудио — переход к следующему аяту.'
   }
 };
 
@@ -236,6 +251,10 @@ window.qbToastKey = function qbToastKey(key) {
   setState({ toastMsg: qbTranslate(key), toastUntil: Date.now() + 3800 });
 };
 
+window.qbToast = function qbToast(msg) {
+  setState({ toastMsg: String(msg || ''), toastUntil: Date.now() + 3800 });
+};
+
 // POS mapping kept for potential future UI use
 const POS = {
   N: 'Noun',
@@ -284,12 +303,17 @@ let state = {
   searchAllLoaded: false,
   searchCount: 0,
   pendingJump: null, // { surah: number, ayah: number }
-  wbw: true,
+  wbw: false,
   selWord: null,
   bmarks: JSON.parse(localStorage.getItem('qca_bm') || '[]'),
   playing: null,
   hlWord: -1,
   continuous: false,
+  playbackRate: 1.0,
+  audioTime: 0,
+  audioDur: 0,
+  audioLoading: false,
+  audioPaused: true,
   tafOpen: null,
   tafData: {},
   tafSrc: null,
@@ -303,6 +327,7 @@ let state = {
   surahPickerOpen: false,
   surahPickerQ: '',
   surahPickerNonce: 0,
+  feedbackModalOpen: false,
   loading: true,
   vLoading: false
 };
@@ -847,8 +872,11 @@ function render() {
 
   // Lock page scroll when the side menu is open.
   try {
-    document.body.style.overflow = state.menuOpen ? 'hidden' : '';
+    const lock = !!(state.menuOpen || state.feedbackModalOpen);
+    document.body.style.overflow = lock ? 'hidden' : '';
     document.body.classList.toggle('menu-open', !!state.menuOpen);
+    document.body.classList.toggle('fb-open', !!state.feedbackModalOpen);
+    document.body.classList.toggle('abar-open', !!state.playing);
   } catch (e) {}
 
   const ae = document.activeElement;
@@ -886,6 +914,24 @@ function render() {
 
     document.documentElement.setAttribute('lang', state.lang || readStoredLang());
     document.title = qbTranslate('titleDoc');
+
+    // Auto-follow currently playing verse (manual play + auto-advance).
+    if (state.view === 'surah' && state.cur && state.playing) {
+      const last = window.__qcaLastPlaying || null;
+      if (last !== state.playing) {
+        window.__qcaLastPlaying = state.playing;
+        const parts = String(state.playing).split(':');
+        const an = parseInt(parts[1], 10);
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`vc${an}`);
+          if (!el) return;
+          const bar = document.querySelector('.abar');
+          const offset = bar && bar.getBoundingClientRect ? Math.ceil(bar.getBoundingClientRect().height) : 80;
+          const top = el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2 + offset / 2;
+          window.scrollTo({ top, behavior: 'smooth' });
+        });
+      }
+    }
 
     // If we navigated from search / juz, scroll to the requested ayah once rendered.
     // This can race with async verse loading, so retry once after a short delay.
@@ -953,6 +999,9 @@ function render() {
     if (e.key !== 'Escape') return;
     if (state && state.surahPickerOpen) {
       setState({ surahPickerOpen: false });
+    }
+    if (state && state.feedbackModalOpen) {
+      setState({ feedbackModalOpen: false });
     }
   });
 

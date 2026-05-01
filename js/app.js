@@ -70,7 +70,8 @@ const i18n = {
     ttPlayKyTrans: 'Кыргызча котормуу аудиосу',
     wbwNote: 'Сөз маанилери англисче көрсөтүлүүдө (WBW {lang} үчүн жеткиликтүү эмес)'
     ,
-    tapToContinue: 'Улантуу үчүн таптаңыз'
+    tapToContinue: 'Улантуу үчүн таптаңыз',
+    audioLoadError: 'Аудио жүктөлбөдү — кийинки аятка өтүүдө'
   },
   en: {
     tagline: 'Quran Reading and Learning',
@@ -132,7 +133,8 @@ const i18n = {
     ttPlayKyTrans: 'Play Kyrgyz translation audio',
     wbwNote: '⟡ Word meanings shown in English (WBW not available in {lang})'
     ,
-    tapToContinue: 'Tap to continue'
+    tapToContinue: 'Tap to continue',
+    audioLoadError: 'Audio failed to load — skipping to the next ayah.'
   },
   ru: {
     tagline: 'Чтение и изучение Корана',
@@ -194,7 +196,8 @@ const i18n = {
     ttPlayKyTrans: 'Аудио перевода (кыргызский)',
     wbwNote: '⟡ Значения слов на английском (нет WBW для {lang})'
     ,
-    tapToContinue: 'Нажмите, чтобы продолжить'
+    tapToContinue: 'Нажмите, чтобы продолжить',
+    audioLoadError: 'Не удалось загрузить аудио — переход к следующему аяту.'
   }
 };
 

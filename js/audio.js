@@ -49,7 +49,7 @@ function ensureAudio() {
     if (state.audioLoading) setState({ audioLoading: false });
   });
   audio.addEventListener('error', () => {
-    if (typeof window.qbToast === 'function') window.qbToast('Аудио жүктөлбөдү — кийинки аятка өтүүдө');
+    if (typeof window.qbToastKey === 'function') window.qbToastKey('audioLoadError');
     const cur = state.playing ? String(state.playing) : '';
     const parts = cur.split(':');
     const sn = parseInt(parts[0], 10);

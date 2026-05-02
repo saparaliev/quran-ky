@@ -2,6 +2,22 @@
 <html lang="ky" dir="ltr">
 <head>
   <meta charset="UTF-8">
+  <script>
+  /* GitHub Pages project URLs like /repo (no trailing slash) break relative asset paths;
+     normalize directory base so favicons, CSS, and JS-set image src resolve under the repo. */
+  (function () {
+    var p = window.location.pathname;
+    if (p.endsWith('.html')) {
+      p = p.slice(0, p.lastIndexOf('/') + 1);
+    } else if (p !== '/' && !p.endsWith('/')) {
+      p += '/';
+    }
+    var href = window.location.origin + (p === '/' ? '/' : p);
+    var b = document.createElement('base');
+    b.href = href;
+    document.head.appendChild(b);
+  })();
+  </script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Quran Bulak</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">

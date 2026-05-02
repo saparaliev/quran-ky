@@ -111,12 +111,75 @@ body.abar-open #app {
   padding: 16px;
 }
 
+.hdr--home {
+  padding: 20px 16px 8px;
+}
+
+.hdr--home .topbar {
+  margin-bottom: 4px;
+}
+
+.hdr--home .title {
+  margin: 0 0 4px;
+}
+
+.hdr--home .sub {
+  margin: 0;
+}
+
+.hdr--home .home-tools {
+  margin-top: 16px;
+}
+
+.home-body {
+  padding: 8px 16px 16px;
+}
+
+.home-view .surah-filter-tabs {
+  margin-bottom: 8px;
+}
+
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 6px;
+}
+
+.topbar--welcome {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-welcome-left {
+  justify-self: start;
+}
+
+.topbar--welcome .topbar-mid {
+  justify-self: center;
+}
+
+.topbar--welcome .topbar-right {
+  justify-self: end;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.topbar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
 }
 
 .topbar-spacer {

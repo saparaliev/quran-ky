@@ -248,6 +248,32 @@ function renderMenuOverlay() {
   );
 }
 
+function renderTopbarLogo() {
+  return h('img', {
+    className: 'topbar-logo',
+    src: 'favicon-192x192.png',
+    alt: 'QuranBulak',
+    width: 32,
+    height: 32,
+    decoding: 'async'
+  });
+}
+
+function renderTopbarLeft() {
+  return h('div', { className: 'topbar-left' }, renderTopbarLogo(), renderTopLeftMenuButton());
+}
+
+/** Welcome screen only: menu | centered 32×32 logo | language selector */
+function renderHomeTopbar() {
+  return h(
+    'div',
+    { className: 'topbar topbar--welcome' },
+    h('div', { className: 'topbar-welcome-left' }, renderTopLeftMenuButton()),
+    h('div', { className: 'topbar-mid' }, renderTopbarLogo()),
+    renderTopBarRight()
+  );
+}
+
 function renderTopLeftMenuButton() {
   return h(
     'button',
@@ -469,21 +495,15 @@ function renderHome() {
 
   return h(
     'div',
-    {},
+    { className: 'home-view' },
     h(
       'div',
-      { className: 'hdr' },
+      { className: 'hdr hdr--home' },
       h(
         'div',
         { className: 'ctr' },
-        h(
-          'div',
-          { className: 'topbar' },
-          renderTopLeftMenuButton(),
-          h('div', { className: 'topbar-fill' }),
-          renderTopBarRight()
-        ),
-        h('div', { className: 'title' }, 'Quran Bulak'),
+        renderHomeTopbar(),
+        h('div', { className: 'title' }, 'QuranBulak'),
         h('div', { className: 'sub' }, qbT('tagline')),
         h(
           'div',
@@ -524,7 +544,7 @@ function renderHome() {
     bmPanel,
     h(
       'div',
-      { className: 'ctr', style: { padding: '16px' } },
+      { className: 'ctr home-body' },
       s.loading
         ? h('div', { className: 'loading' }, h('span', { className: 'spin' }), qbT('loadingSurahs'))
         : (() => {
@@ -695,7 +715,7 @@ function renderPageShell(title, bodyEl) {
         h(
           'div',
           { className: 'topbar' },
-          renderTopLeftMenuButton(),
+          renderTopbarLeft(),
           h('div', { className: 'page-title' }, title),
           renderTopBarRight()
         ),
@@ -792,10 +812,10 @@ function renderSurah() {
   const hdr = h(
     'div',
     { className: 's-hdr' },
-    h(
-      'div',
-      { className: 's-bar ctr' },
-      renderTopLeftMenuButton(),
+      h(
+        'div',
+        { className: 's-bar ctr' },
+      renderTopbarLeft(),
       h(
         'button',
         {

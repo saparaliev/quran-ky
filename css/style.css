@@ -154,8 +154,25 @@ body.abar-open #app {
   gap: 10px;
 }
 
+/* Beat `.topbar { display: flex }` when both classes apply (some embedded previews reorder CSS). */
+.topbar.topbar--welcome {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
 .topbar-welcome-left {
   justify-self: start;
+}
+
+.topbar-mid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
 }
 
 .topbar--welcome .topbar-mid {
@@ -177,9 +194,11 @@ body.abar-open #app {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  object-fit: cover;
+  overflow: hidden;
   display: block;
   flex-shrink: 0;
+  object-fit: cover;
+  vertical-align: middle;
 }
 
 .topbar-spacer {
@@ -406,6 +425,15 @@ body.abar-open #app {
   padding-top: 16px;
   border-top: 1px solid var(--bdr);
   white-space: pre-line;
+}
+
+.page-p.about-website {
+  margin-top: 12px;
+  color: var(--txt);
+}
+
+.page-p.about-website .about-site-link {
+  color: var(--gold);
 }
 
 .page-p.about-contact {

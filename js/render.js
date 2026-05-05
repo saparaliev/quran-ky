@@ -248,10 +248,31 @@ function renderMenuOverlay() {
   );
 }
 
+/** Same artwork as favicon.svg — template clone + img fallback for IDE preview / strict WebViews. */
+var QB_TOPBAR_LOGO_DATA_URL =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+      '<rect width="512" height="512" rx="80" fill="#0d1512"/>' +
+      '<circle cx="256" cy="256" r="200" fill="none" stroke="#4a8f6e" stroke-width="6" opacity="0.25"/>' +
+      '<circle cx="256" cy="256" r="150" fill="none" stroke="#4a8f6e" stroke-width="6" opacity="0.5"/>' +
+      '<circle cx="256" cy="256" r="100" fill="none" stroke="#c8a96e" stroke-width="8"/>' +
+      '<circle cx="256" cy="256" r="50" fill="#c8a96e"/>' +
+      '</svg>'
+  );
+
 function renderTopbarLogo() {
+  var tpl = document.getElementById('qb-topbar-logo-tpl');
+  if (tpl && tpl.content && tpl.content.firstElementChild) {
+    var svg = tpl.content.firstElementChild.cloneNode(true);
+    svg.setAttribute('class', 'topbar-logo');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'QuranBulak');
+    return svg;
+  }
   return h('img', {
     className: 'topbar-logo',
-    src: 'favicon-192x192.png',
+    src: QB_TOPBAR_LOGO_DATA_URL,
     alt: 'QuranBulak',
     width: 32,
     height: 32,
@@ -760,6 +781,21 @@ function renderAbout() {
       h('div', { className: 'page-h' }, qbT('aboutTitle')),
       h('div', { className: 'page-p about-main' }, qbT('aboutMain')),
       h('div', { className: 'page-p about-credit' }, qbT('aboutCredit')),
+      h(
+        'div',
+        { className: 'page-p about-website' },
+        qbT('aboutWebsitePrefix'),
+        ' ',
+        h(
+          'a',
+          {
+            className: 'about-site-link',
+            href: 'https://quranbulak.com/',
+            rel: 'noopener noreferrer'
+          },
+          'quranbulak.com'
+        )
+      ),
       h(
         'div',
         { className: 'page-p about-contact' },

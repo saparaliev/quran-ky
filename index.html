@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="canonical" href="https://quranbulak.com/">
+  <meta property="og:url" content="https://quranbulak.com/">
   <title>Quran Bulak</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -13,6 +15,16 @@
 </head>
 <body>
   <div id="app"></div>
+  <!-- Parsed once by the HTML engine; clone for topbar (reliable in IDE preview WebViews). -->
+  <template id="qb-topbar-logo-tpl">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32">
+      <rect width="512" height="512" rx="80" fill="#0d1512"/>
+      <circle cx="256" cy="256" r="200" fill="none" stroke="#4a8f6e" stroke-width="6" opacity="0.25"/>
+      <circle cx="256" cy="256" r="150" fill="none" stroke="#4a8f6e" stroke-width="6" opacity="0.5"/>
+      <circle cx="256" cy="256" r="100" fill="none" stroke="#c8a96e" stroke-width="8"/>
+      <circle cx="256" cy="256" r="50" fill="#c8a96e"/>
+    </svg>
+  </template>
   <!-- Kyrgyz prerecorded MP3 (separate from Arabic recitation player) -->
   <audio id="kyAuxAudioTrans" preload="none"></audio>
   <audio id="kyAuxAudioTafsir" preload="none"></audio>

@@ -50,6 +50,7 @@ const i18n = {
     aboutCredit:
       'Арабча маалымат үчүн Tanzil долбооруна,\nаудио үчүн Everyayah.com\'го ыраазычылык билдиребиз.',
     aboutContactPrefix: 'Байланыш:',
+    aboutWebsitePrefix: 'Сайт:',
     aboutBlessing: 'Алла кабыл кылсын! 🤲',
     wMean: 'Маани',
     wPos: 'Орун',
@@ -113,6 +114,7 @@ const i18n = {
     aboutCredit:
       'We credit Tanzil for their Quran data and\nEveryayah.com for their recitations.',
     aboutContactPrefix: 'Contact:',
+    aboutWebsitePrefix: 'Website:',
     aboutBlessing: 'May Allah accept it! 🤲',
     wMean: 'Meaning',
     wPos: 'Position',
@@ -176,6 +178,7 @@ const i18n = {
     aboutCredit:
       'Благодарим проект Tanzil за данные Корана\nи Everyayah.com за аудио рецитации.',
     aboutContactPrefix: 'Контакт:',
+    aboutWebsitePrefix: 'Сайт:',
     aboutBlessing: 'Да примет Аллах! 🤲',
     wMean: 'Значение',
     wPos: 'Позиция',
